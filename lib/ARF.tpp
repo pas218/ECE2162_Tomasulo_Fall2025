@@ -1,5 +1,5 @@
-#include "ARF.hpp"
 #include <iostream>
+
 
 template <typename T>
 ARF<T>::ARF()
@@ -19,6 +19,12 @@ ARF<T>::ARF(int numRegistersInput)
 	{
 		registersPtr[i] = static_cast<T>(0);
 	}
+}
+
+template <typename T>
+ARF<T>::~ARF()
+{
+	delete[] registersPtr;	
 }
 
 template <typename T>

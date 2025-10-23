@@ -2,10 +2,17 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_CXX_COMPILER G++)
 project(ECE2162_Tomasulo_Fall2025 LANGUAGES CXX)
 
-add_executable(ECE2162_Tomasulo_Fall2025 src/main.cpp)
+include_directories(lib)
 
-add_subdirectory(lib)
+add_executable(${PROJECT_NAME} src/main.cpp)
 
-target_include_directories(ECE2162_Tomasulo_Fall2025 PUBLIC lib)
-target_link_libraries(ECE2162_Tomasulo_Fall2025 PUBLIC classes)
+# Link the static library from subproject1 using its alias sub::lib1
+# Link the header only library from subproject2 using its alias sub::lib2
+# This will cause the include directories for that target to be added to this project
+#target_link_libraries(${PROJECT_NAME}
+#    classes
+#)
+
+
+
 

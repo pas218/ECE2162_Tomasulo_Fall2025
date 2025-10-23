@@ -1,5 +1,6 @@
-#include "ARF.cpp"
 #include <iostream>
+#include "ARF.hpp"
+
 
 int main()
 {
