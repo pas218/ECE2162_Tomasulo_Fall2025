@@ -5,6 +5,12 @@ I propose this project will follow the file structure outlined in this article: 
 
 In repository, enter the following commands:
 
+chmod +x build_project.sh
+
+./build_project.sh
+
+If that doesn't work, then enter the following commands:
+
 mkdir build && cd build
 
 cmake -G "MinGW Makefiles" ..
