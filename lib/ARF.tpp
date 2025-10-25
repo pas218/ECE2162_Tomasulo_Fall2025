@@ -24,7 +24,7 @@ ARF<T>::ARF(int numRegistersInput)
 template <typename T>
 ARF<T>::~ARF()
 {
-	delete[] registersPtr;	
+	delete[] registersPtr;
 }
 
 template <typename T>
