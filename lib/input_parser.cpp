@@ -15,7 +15,7 @@ extern std::vector<mem_unit> memory;
 extern std::vector<inst> instruction;
 
 extern int num_ROB;
-int num_CDB = 0;
+int num_CDB_buf = 0;
 
 extern int num_addiRS;
 extern int num_addfRS;
@@ -42,9 +42,9 @@ extern IntRAT *IntRat;
 extern FpRAT *FpRat;
 extern ReOrderBuf *ROB;
 extern RS *addiRS,*addfRS,*mulfRS,*memRS;
-extern ADDIER *addier, *memer, *memer2;
-extern ADDFER *addfer;
-extern MULFER *mulfer;
+extern AddIUnit *addiunit, *memunit, *memunit2;
+extern AddFUnit *addfunit;
+extern MulFUnit *mulfunit;
 
 extern int clk;		
 
@@ -133,13 +133,13 @@ bool RS::full()
     return size == n;
 }
 
-ADDIER::ADDIER()
+AddIUnit::AddIUnit()
 {
     empty = true;
     cycle = 0;
 }
 
-ADDFER::ADDFER()
+AddFUnit::AddFUnit()
 {
     n = 1;
     line = new RS_entry[n];
@@ -149,20 +149,20 @@ ADDFER::ADDFER()
     cycle = 0;
 }
 
-int ADDFER::get_size()
+int AddFUnit::get_size()
 {
     return size;
 }
-bool ADDFER::empty()
+bool AddFUnit::empty()
 {
     return size == 0;
 }
-bool ADDFER::full()
+bool AddFUnit::full()
 {
     return size == n;
 }
 
-MULFER::MULFER()
+MulFUnit::MulFUnit()
 {
     n = 1;
     line = new RS_entry[n];
@@ -172,18 +172,20 @@ MULFER::MULFER()
     cycle = 0;
 }
 
-int MULFER::get_size()
+int MulFUnit::get_size()
 {
     return size;
 }
-bool MULFER::empty()
+bool MulFUnit::empty()
 {
     return size == 0;
 }
-bool MULFER::full()
+bool MulFUnit::full()
 {
     return size == n;
 }
+
+
 
 
 // Main parsing function that reads the input file and stores all necessary parameters
@@ -262,11 +264,11 @@ void InputParser::parse(const std::string &filename)
 	addfRS = new RS(num_addfRS);
 	mulfRS = new RS(num_mulfRS);
 	memRS = new RS(num_memRS);
-	addier = new ADDIER[num_addi];
-	memer= new ADDIER;
-	memer2= new ADDIER;
-	addfer = new ADDFER[num_addf];
-	mulfer = new MULFER[num_mulf];
+	addiunit = new AddIUnit[num_addi];
+	memunit= new AddIUnit;
+	memunit2= new AddIUnit;
+	addfunit = new AddFUnit[num_addf];
+	mulfunit = new MulFUnit[num_mulf];
 
 
 
@@ -302,7 +304,7 @@ void InputParser::parse(const std::string &filename)
         // Second row is number of CDB buffer entries
         else if (i == 1) 
         {
-			num_CDB = atoi(words[3]);
+			num_CDB_buf = atoi(words[3]);
 		}
 
         // Third row is initial integer register values
@@ -501,10 +503,214 @@ void InputParser::parse(const std::string &filename)
 
     // Close input file
     input.close();
+
+    // Print the parsed results from input.txt to the terminal
+    //------------------------------------------------------------------------------------------
+    std::cout << "\n-----------------------------------------------\n";
+    std::cout << "Printing information parsed from input.txt...\n\n";
+    std::cout << "Integer adder: " << num_addiRS << " RS, " << cycle_addi << " EX cycle(s), " << num_addi << " FU\n";
+    std::cout << "FP adder: " << num_addfRS << " RS, " << cycle_addf << " EX cycle(s), " << num_addf << " FU\n";
+    std::cout << "FP multiplier: " << num_mulfRS << " RS, " << cycle_mulf << " EX cycle(s), " << num_mulf << " FU\n";
+    std::cout << "Load/store unit: " << num_memRS << " RS, " << cycle_mem_exe << " EX cycle(s), " << cycle_mem_mem << " MEM cycle(s), " << num_mem << " FU\n\n";
+    std::cout << "ROB entries: " << num_ROB << "\n";
+    std::cout << "CDB buffer entries: " << num_CDB_buf << "\n\n";
+
+    // Print nonzero int registers
+    if (IntArf)
+    {
+        //std::cout << "Int Registers (nonzero):\n";
+        for (int i = 0; i < IntArf->pointer; i++)
+        {
+            if (IntArf->table[i].value != 0)
+            {
+                std::cout << "R" << i << " = " << IntArf->table[i].value << "\n";
+            }
+        }
+    }
+
+    // Print nonzero FP registers
+    if (FpArf)
+    {
+        //std::cout << "FP Registers (nonzero):\n";
+        for (int i = 0; i < FpArf->pointer; i++)
+        {
+            if (FpArf->table[i].value != 0)
+            {
+                std::cout << "F" << i << " = " << FpArf->table[i].value << "\n";
+            }
+        }
+    }
+
+    // Print nonzero memory
+    if (memory.empty())
+    {
+        std::cout << "(No memory entries found)\n";
+    }
+    else
+    {
+        //std::cout << "Memory (nonzero):\n";
+        for (auto &m : memory) {
+            std::cout << "Mem[" << m.first << "] = " << m.second << "\n";
+        }
+    }
+
+    // Print all instructions in the same format as they were read
+    if (!instruction.empty())
+    {
+        std::cout << "\nInstructions loaded:\n";
+        for (size_t i = 0; i < instruction.size(); ++i)
+        {
+            const inst &it = instruction[i];
+            std::cout << i + 1 << ": ";
+
+            switch (it.opcode)
+            {
+                case addi:
+                    std::cout << "Add R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
+                    break;
+                case subi:
+                    std::cout << "Sub R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
+                    break;
+                case addf:
+                    std::cout << "Add.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
+                    break;
+                case subf:
+                    std::cout << "Sub.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
+                    break;
+                case mulf:
+                    std::cout << "Mul.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
+                    break;
+                case load:
+                    std::cout << "Ld F" << it.rd.id << ", " << it.rt.value << "(R" << it.rs.id << ")";
+                    break;
+                case store:
+                    std::cout << "Sd F" << it.rs.id << ", " << it.rt.value << "(R" << it.rd.id << ")";
+                    break;
+                case beq:
+                    std::cout << "Beq R" << it.rs.id << ", R" << it.rt.id << ", " << it.rt.value;
+                    break;
+                case bne:
+                    std::cout << "Bne R" << it.rs.id << ", R" << it.rt.id << ", " << it.rt.value;
+                    break;
+                default:
+                    std::cout << "(Unknown opcode: " << it.name << ")";
+                    break;
+            }
+
+            std::cout << "\n";
+        }
+    }
+    else
+    {
+        std::cout << "\nNo instructions found.\n";
+    }
+
+    std::cout << "-----------------------------------------------\n" << std::endl;
+    //------------------------------------------------------------------------------------------
 }
 
+void InputParser::output()
+{
+    std::cout << "\n-----------------------------------------------\n";
+    std::cout << "Printing outputs...\n\n";
 
+    // Results table formatting
+    std::cout << "\t\t\t\tISSUE\t\tEX\t\tMEM\t\tWB\t\tCOMMIT\n";
 
+    // Display ISSUE/EX/MEM/WB/COMMIT cycle results
+    if (!instruction.empty())
+    {
+        for (size_t i = 0; i < instruction.size(); ++i)
+        {
+            const inst &it = instruction[i];
+            std::cout << i + 1 << ": ";
+
+            switch (it.opcode)
+            {
+                case addi:
+                    std::cout << "Add R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
+                    break;
+                case subi:
+                    std::cout << "Sub R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
+                    break;
+                case addf:
+                    std::cout << "Add.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
+                    break;
+                case subf:
+                    std::cout << "Sub.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
+                    break;
+                case mulf:
+                    std::cout << "Mul.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
+                    break;
+                case load:
+                    std::cout << "Ld F" << it.rd.id << ", " << it.rt.value << "(R" << it.rs.id << ")\t";
+                    break;
+                case store:
+                    std::cout << "Sd F" << it.rs.id << ", " << it.rt.value << "(R" << it.rd.id << ")\t";
+                    break;
+                case beq:
+                    std::cout << "Beq R" << it.rs.id << ", R" << it.rt.id << ", " << it.rt.value;
+                    break;
+                case bne:
+                    std::cout << "Bne R" << it.rs.id << ", R" << it.rt.id << ", " << it.rt.value;
+                    break;
+                default:
+                    std::cout << "(Unknown opcode: " << it.name << ")\t";
+                    break;
+            }
+
+            // TODO: 1, 2, 3, 4, and 5 are placeholders. These will eventually be ISSUE, EX, MEM, WB, and COMMIT
+            // for the respective instruction that's being printed in each row.
+            std::cout << "\t\t" << 1 << "\t\t" << 2 << "\t\t" << 3 << "\t\t" << 4 << "\t\t" << 5 << "\n";
+
+        }
+    }
+
+    // Display the non-zero register and memory values
+
+    // Print nonzero int registers
+    std::cout << "\n";
+    if (IntArf)
+    {
+        //std::cout << "Int Registers (nonzero):\n";
+        for (int i = 0; i < IntArf->pointer; i++)
+        {
+            if (IntArf->table[i].value != 0)
+            {
+                std::cout << "R" << i << " = " << IntArf->table[i].value << "\n";
+            }
+        }
+    }
+
+    // Print nonzero FP registers
+    if (FpArf)
+    {
+        //std::cout << "FP Registers (nonzero):\n";
+        for (int i = 0; i < FpArf->pointer; i++)
+        {
+            if (FpArf->table[i].value != 0)
+            {
+                std::cout << "F" << i << " = " << FpArf->table[i].value << "\n";
+            }
+        }
+    }
+
+    // Print nonzero memory
+    if (memory.empty())
+    {
+        std::cout << "(No memory entries found)\n";
+    }
+    else
+    {
+        //std::cout << "Memory (nonzero):\n";
+        for (auto &m : memory) {
+            std::cout << "Mem[" << m.first << "] = " << m.second << "\n";
+        }
+    }
+
+    std::cout << "-----------------------------------------------\n" << std::endl;
+
+}
 
 
 

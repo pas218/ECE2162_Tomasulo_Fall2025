@@ -25,6 +25,7 @@ class InputParser
 {
 public:
     static void parse(const std::string &filename);
+	static void output();
 };
 
 
@@ -170,7 +171,7 @@ public:
 	}
 };
 
-
+/*
 void Addi();
 void Addf();
 void Mulf();
@@ -184,6 +185,7 @@ void execution();
 void mem();
 void writeback();
 void commit();
+*/
 
 class RS_entry
 {
@@ -213,16 +215,16 @@ public:
 	~RS(){delete[]table;}
 };
 
-class ADDIER
+class AddIUnit
 {
 public:
 	RS_entry line;
 	bool empty;
 	int cycle;
-	ADDIER();
+	AddIUnit();
 };
 
-class ADDFER
+class AddFUnit
 {
 public:
 	RS_entry *line;
@@ -235,10 +237,10 @@ public:
 	int get_size();
 	bool empty();
 	bool full();
-	ADDFER();
+	AddFUnit();
 };
 
-class MULFER
+class MulFUnit
 {
 public:
 	RS_entry *line;
@@ -251,6 +253,7 @@ public:
 	int get_size();
 	bool empty();
 	bool full();
-	MULFER();
+	MulFUnit();
 };
+
 #endif

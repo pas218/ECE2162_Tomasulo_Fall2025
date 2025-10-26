@@ -1,5 +1,6 @@
 // main.cpp
 //#include "../lib/ARF.hpp"
+#include "../lib/CDB.hpp"
 #include "../lib/input_parser.h"
 #include <iostream>
 #include <vector>
@@ -24,7 +25,7 @@ int num_mulf=0;
 int num_mem=0;
 
 // External globals declared in input_parser.cpp
-extern int num_CDB;
+extern int num_CDB_buf;
 extern std::vector<mem_unit> memory;
 extern std::vector<inst> instruction;
 
@@ -43,9 +44,9 @@ ReOrderBuf *ROB;
 
 RS *addiRS,*addfRS,*mulfRS,*memRS;
 RS_entry e_m, m_w, w_c;
-ADDIER *addier, *memer, *memer2;
-ADDFER *addfer;
-MULFER *mulfer;
+AddIUnit *addiunit, *memunit, *memunit2;
+AddFUnit *addfunit;
+MulFUnit *mulfunit;
 
 
 // Vectors for storing memory and instructions
@@ -62,114 +63,50 @@ int main()
     IntArf = new IntARF(32);
     FpArf  = new FpARF(32);
 
-    // Parse the input.txt file in input_parser.cpp
+    // Parse the input.txt file and print the input configuration that has been read
     InputParser::parse("input.txt");
 
-	
-    // Print the parsed results from input.txt to the terminal
-    //------------------------------------------------------------------------------------------
-    std::cout << "\n-----------------------------------------------\n";
-    std::cout << "Printing information parsed from input.txt...\n\n";
-    std::cout << "Integer adder: " << num_addiRS << " RS, " << cycle_addi << " EX cycle(s), " << num_addi << " FU\n";
-    std::cout << "FP adder: " << num_addfRS << " RS, " << cycle_addf << " EX cycle(s), " << num_addf << " FU\n";
-    std::cout << "FP multiplier: " << num_mulfRS << " RS, " << cycle_mulf << " EX cycle(s), " << num_mulf << " FU\n";
-    std::cout << "Load/store unit: " << num_memRS << " RS, " << cycle_mem_exe << " EX cycle(s), " << cycle_mem_mem << " MEM cycle(s), " << num_mem << " FU\n\n";
-    std::cout << "ROB entries: " << num_ROB << "\n";
-    std::cout << "CDB count: " << num_CDB << "\n\n";
 
-    // Print nonzero int registers
-    if (IntArf)
-    {
-        //std::cout << "Int Registers (nonzero):\n";
-        for (int i = 0; i < IntArf->pointer; i++)
-        {
-            if (IntArf->table[i].value != 0)
-            {
-                std::cout << "R" << i << " = " << IntArf->table[i].value << "\n";
-            }
-        }
-    }
 
-    // Print nonzero FP registers
-    if (FpArf)
-    {
-        //std::cout << "FP Registers (nonzero):\n";
-        for (int i = 0; i < FpArf->pointer; i++)
-        {
-            if (FpArf->table[i].value != 0)
-            {
-                std::cout << "F" << i << " = " << FpArf->table[i].value << "\n";
-            }
-        }
-    }
+	// I'm not sure if we need a separate int and float CDB...?
+    CDB<int> intCDB(num_CDB_buf);
+    CDB<float> floatCDB(num_CDB_buf);
 
-    // Print nonzero memory
-    if (memory.empty())
+	// Example: push a value to the CDB
+    std::cout << "Pushing value 42 to integer CDB..." << std::endl;
+    bool success = intCDB.push(1, 5, 42);  // robID=1, destReg=5, value=42
+    if (!success)
+        std::cout << "Failed to push to CDB." << std::endl;
+
+    // Example: pop a value from the CDB
+    CDB_entry<int> entry;
+    if (intCDB.pop(entry))
     {
-        std::cout << "(No memory entries found)\n";
+        std::cout << "Popped from CDB: robID=" << entry.robID
+                  << ", destReg=" << entry.destReg
+                  << ", value=" << entry.value << std::endl;
     }
     else
     {
-        //std::cout << "Memory (nonzero):\n";
-        for (auto &m : memory) {
-            std::cout << "Mem[" << m.first << "] = " << m.second << "\n";
-        }
+        std::cout << "CDB is empty, nothing to pop." << std::endl;
     }
 
-    // Print all instructions in the same format as they were read
-    if (!instruction.empty())
-    {
-        std::cout << "\nInstructions loaded:\n";
-        for (size_t i = 0; i < instruction.size(); ++i)
-        {
-            const inst &it = instruction[i];
-            std::cout << i + 1 << ": ";
 
-            switch (it.opcode)
-            {
-                case addi:
-                    std::cout << "Add R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
-                    break;
-                case subi:
-                    std::cout << "Sub R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
-                    break;
-                case addf:
-                    std::cout << "Add.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
-                    break;
-                case subf:
-                    std::cout << "Sub.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
-                    break;
-                case mulf:
-                    std::cout << "Mul.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
-                    break;
-                case load:
-                    std::cout << "Ld F" << it.rd.id << ", " << it.rt.value << "(R" << it.rs.id << ")";
-                    break;
-                case store:
-                    std::cout << "Sd F" << it.rs.id << ", " << it.rt.value << "(R" << it.rd.id << ")";
-                    break;
-                case beq:
-                    std::cout << "Beq R" << it.rs.id << ", R" << it.rt.id << ", " << it.rt.value;
-                    break;
-                case bne:
-                    std::cout << "Bne R" << it.rs.id << ", R" << it.rt.id << ", " << it.rt.value;
-                    break;
-                default:
-                    std::cout << "(Unknown opcode: " << it.name << ")";
-                    break;
-            }
 
-            std::cout << "\n";
-        }
-    }
-    else
-    {
-        std::cout << "\nNo instructions found.\n";
-    }
 
-    std::cout << "-----------------------------------------------\n";
-    //------------------------------------------------------------------------------------------
+    
 
+	std::cout << "Begin Tomasulo algorithm" << std::endl;
+	// ...
+	// The actual issue/ex/mem/wb/commit process happens here
+	// ...
+
+
+
+
+
+	// Output the final results to the terminal
+	InputParser::output();
 
 
 
