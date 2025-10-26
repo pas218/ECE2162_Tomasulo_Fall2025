@@ -8,6 +8,8 @@ class ARF
     private:
         int numRegisters;
         T  *registersPtr;      // Our actual registers will be dynamically allocated to account for specified input.
+		static_assert(std::is_same<T, int>::value || std::is_same<T, float>::value,
+                "The ARF class can only be instantied with either type int or float.");
     public:
         ARF(); 
         ARF(int numRegistersInput);
