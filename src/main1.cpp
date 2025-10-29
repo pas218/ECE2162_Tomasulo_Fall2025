@@ -100,7 +100,7 @@ int main()
 
 	std::cout << "Begin Tomasulo algorithm" << std::endl;
 
-
+    /*
 	// ...
 	// The actual issue/ex/mem/wb/commit process happens here
 	// ...
@@ -146,7 +146,7 @@ int main()
 
 
     }
-
+    */
 
 	// Output the final results to the terminal
 	InputParser::output();
