@@ -1,6 +1,7 @@
 // ARF.hpp
 #ifndef ARF_H
 #define ARF_H
+#include <vector>
 
 template <typename T>
 class ARF
@@ -13,7 +14,9 @@ class ARF
     public:
         ARF(); 
         ARF(int numRegistersInput);
+		ARF(std::vector<T> &values);
 		~ARF();
+		int getSize();
         // Change the value of a register. Returns 1 if successful, otherwise return 0.
         bool changeValue(int registerNumber, T value);
         T getValue(int registerNumber);
