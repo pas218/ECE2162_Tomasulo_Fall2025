@@ -22,9 +22,27 @@ ARF<T>::ARF(int numRegistersInput)
 }
 
 template <typename T>
+ARF<T>::ARF(std::vector<T> &values)
+{
+	numRegisters = values.size();
+    registersPtr = new T(values.size());
+	// Initialize all of the registers to 0.
+	for (int i = 0; i < values.size(); i++)
+	{
+		registersPtr[i] = values[i];
+	}
+}
+
+template <typename T>
 ARF<T>::~ARF()
 {
 	delete[] registersPtr;
+}
+
+template <typename T>
+int ARF<T>::getSize()
+{
+	return numRegisters;
 }
 
 template <typename T>

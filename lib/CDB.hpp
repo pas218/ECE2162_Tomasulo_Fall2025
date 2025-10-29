@@ -1,6 +1,6 @@
 // CDB.hpp
-#ifndef ARF_H
-#define ARF_H
+#ifndef CDB_H
+#define CDB_H
 
 #include <iostream>
 

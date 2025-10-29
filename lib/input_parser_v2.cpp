@@ -1,6 +1,5 @@
 // input_parser.cpp
-#include "input_parser.h"
-#include "ARF.hpp"
+#include "input_parser_v2.hpp"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -11,34 +10,13 @@
 
 using namespace std;
 
-// extern definitions
-extern std::vector<mem_unit> memory;
-extern std::vector<inst> instruction;
 
-extern int num_ROB;
-int num_CDB_buf = 0;
-
-extern int num_addiRS;
-extern int num_addfRS;
-extern int num_mulfRS;
-extern int num_memRS;
-
-extern int cycle_addi;
-extern int cycle_addf;
-extern int cycle_mulf;
-extern int cycle_mem_exe;
-extern int cycle_mem_mem;
-
-extern int num_addi;
-extern int num_addf;
-extern int num_mulf;
-extern int num_mem;
 
 extern Operation opcode;
 extern item dst,src,tgt;
 extern InstBuf ib;
-extern ARF<int> *IntARF;
-extern ARF<float> *FpARF;
+//extern IntARF *IntArf;
+//extern FpARF *FpArf;
 extern IntRAT *IntRat;
 extern FpRAT *FpRat;
 extern ReOrderBuf *ROB;
@@ -78,7 +56,7 @@ FpARF::FpARF(int n)
         table[i].value = 0.0f;
     }
 }
-*/
+
 IntRAT::IntRAT(int n)
 {
     pointer = n;
@@ -102,7 +80,7 @@ FpRAT::FpRAT(int n)
         table[i].value = 0.0f;
     }
 }
-
+*/
 ReOrderBuf::ReOrderBuf(int n)
 {
     size = n;
@@ -187,7 +165,34 @@ bool MulFUnit::full()
 }
 
 
+InputParser::InputParser(int numARF)
+{
+	int num_ROB = 0;
+	int num_CDB_buf = 0;
 
+	int num_addiRS = 0;
+	int num_addfRS = 0;
+	int num_mulfRS = 0;
+	int num_memRS = 0;
+
+	int cycle_addi = 0;
+	int cycle_addf = 0;
+	int cycle_mulf = 0;
+	int cycle_mem_exe = 0;
+	int cycle_mem_mem = 0;
+
+	int num_addi = 0;
+	int num_addf = 0;
+	int num_mulf = 0;
+	int num_mem = 0;
+	
+	for (int i = 0; i < numARF; i++)
+	{
+		intARFValues.push_back(0);
+		floatARFValues.push_back(0.0f);
+
+	}
+}
 
 // Main parsing function that reads the input file and stores all necessary parameters
 void InputParser::parse(const std::string &filename)
@@ -318,11 +323,11 @@ void InputParser::parse(const std::string &filename)
 			while (k < max && words[k][0] == 'R')
             {
                 int index = atoi(words[k] + 1);
-                if (index < IntARF->getSize())
+                if (index < intARFValues.size())
                 {
                     if (k + 1 < max)
                     {
-                        IntARF->changeValue(index, atoi(words[k + 1]));
+                        intARFValues[index] = atoi(words[k + 1]);
                     }
                 }
                 else
@@ -343,8 +348,8 @@ void InputParser::parse(const std::string &filename)
                 if (token[0] == 'F')
                 {
                     int index = std::stoi(token.substr(1));
-                    if (index < FpARF->getSize()){
-                        FpARF->changeValue(index, value);
+                    if (index < floatARFValues.size()) {
+						floatARFValues[index] = value;
                     }
                     else
                     {
@@ -515,27 +520,27 @@ void InputParser::parse(const std::string &filename)
     std::cout << "CDB buffer entries: " << num_CDB_buf << "\n\n";
 
     // Print nonzero int registers
-    if (IntARF)
+    if (intARFValues.size() != 0)
     {
         //std::cout << "Int Registers (nonzero):\n";
-        for (int i = 0; i < IntARF->getSize(); i++)
+        for (int i = 0; i < intARFValues.size(); i++)
         {
-            if (IntARF->getValue(i) != 0)
+            if (intARFValues[i] != 0)
             {
-                std::cout << "R" << i << " = " << IntARF->getValue(i) << "\n";
+                std::cout << "R" << i << " = " << intARFValues[i] << "\n";
             }
         }
     }
 
     // Print nonzero FP registers
-    if (FpARF)
+    if (floatARFValues.size() != 0)
     {
         //std::cout << "FP Registers (nonzero):\n";
-        for (int i = 0; i < FpARF->getSize(); i++)
+        for (int i = 0; i < floatARFValues.size(); i++)
         {
-            if (FpARF->getValue(i) != 0)
+            if (floatARFValues[i] != 0)
             {
-                std::cout << "F" << i << " = " << FpARF->getValue(i) << "\n";
+                std::cout << "F" << i << " = " << floatARFValues[i] << "\n";
             }
         }
     }
@@ -608,6 +613,7 @@ void InputParser::parse(const std::string &filename)
     //------------------------------------------------------------------------------------------
 }
 
+/*
 void InputParser::output()
 {
     std::cout << "\n-----------------------------------------------\n";
@@ -669,27 +675,27 @@ void InputParser::output()
 
     // Print nonzero int registers
     std::cout << "\n";
-    if (IntARF)
+    if (IntArf)
     {
         //std::cout << "Int Registers (nonzero):\n";
-        for (int i = 0; i < IntARF->getSize(); i++)
+        for (int i = 0; i < IntArf->pointer; i++)
         {
-            if (IntARF->getValue(i) != 0)
+            if (IntArf->table[i].value != 0)
             {
-                std::cout << "R" << i << " = " << IntARF->getValue(i) << "\n";
+                std::cout << "R" << i << " = " << IntArf->table[i].value << "\n";
             }
         }
     }
 
     // Print nonzero FP registers
-    if (FpARF)
+    if (FpArf)
     {
         //std::cout << "FP Registers (nonzero):\n";
-        for (int i = 0; i < FpARF->getSize(); i++)
+        for (int i = 0; i < FpArf->pointer; i++)
         {
-            if (FpARF->getValue(i) != 0)
+            if (FpArf->table[i].value != 0)
             {
-                std::cout << "F" << i << " = " << FpA->getValue(i) << "\n";
+                std::cout << "F" << i << " = " << FpArf->table[i].value << "\n";
             }
         }
     }
@@ -710,6 +716,4 @@ void InputParser::output()
     std::cout << "-----------------------------------------------\n" << std::endl;
 
 }
-
-
-
+*/
