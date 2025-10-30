@@ -1,15 +1,28 @@
 #include "Tomasulo.hpp"
 
 
+Tomasulo::Tomasulo(int numRow, int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore)
+	: numRow(numRow) , numberInstructions(numberInstructions), numExInt(numExInt), numExFPAdd(numExFPAdd), numExFPMult(numExFPMult),
+		numExLoadStore(numExLoadStore), numMemLoadStore(numMemLoadStore)
+{
+
+}
+
 
 // TODO: There are errors here because, for example, instruction cannot be accessed here. I'm ignoring for now since I can't build anyway
-//       I may also just be accessing things in the wrong way.
-bool Tomasulo::issue()
+//       I may also just be accessing things in the wrong way.\
+// Classes we will need for the issue cycle:
+// ARF
+// RAT
+// ROB
+// RS
+// Instructions
+bool Tomasulo::issue(ARF<int> IntARF, ARF<float> FpARF)
 {
 	bool success = false;
 
     // Loop over all instructions to find the first one that hasn't been issued
-    for (size_t i = 0; i < instruction.size(); ++i)
+    for (size_t i = 0; i < numberInstructions; ++i)
     {
         inst &ins = instruction[i];
 
@@ -151,6 +164,7 @@ bool Tomasulo::issue()
 }
 
 
+// Classes we will need for execute stage
 bool Tomasulo::execute()
 {
 	bool success = 0;
