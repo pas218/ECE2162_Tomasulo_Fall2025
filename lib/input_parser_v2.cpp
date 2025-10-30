@@ -25,7 +25,7 @@ extern AddIUnit *addiunit, *memunit, *memunit2;
 extern AddFUnit *addfunit;
 extern MulFUnit *mulfunit;
 
-extern int clk;		
+extern int currentCycle;		
 
 
 item::item() : value(0.0f), id(0), imme_flag(false), ready(false) {}
