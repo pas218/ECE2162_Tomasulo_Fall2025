@@ -14,12 +14,12 @@ using namespace std;
 
 extern Operation opcode;
 extern item dst,src,tgt;
-extern InstBuf ib;
+//extern InstBuf ib;
 //extern IntARF *IntArf;
 //extern FpARF *FpArf;
 //extern IntRAT *IntRat;
 //extern FpRAT *FpRat;
-extern ReOrderBuf *ROB;
+//extern ReOrderBuf *ROB;
 extern AddIUnit *addiunit, *memunit, *memunit2;
 extern AddFUnit *addfunit;
 extern MulFUnit *mulfunit;
@@ -80,14 +80,7 @@ FpRAT::FpRAT(int n)
     }
 }
 */
-ReOrderBuf::ReOrderBuf(int n)
-{
-    size = n;
-    n = 0;
-    head = 0;
-    tail = 0;
-    table = new ReOrderBuf_entry[n];
-}
+
 
 /*
 RS::RS(int capacity)

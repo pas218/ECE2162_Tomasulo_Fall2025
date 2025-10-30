@@ -4,6 +4,7 @@
 #include "CDB.hpp"
 #include "RS.hpp"
 #include "input_parser_v2.hpp"
+#include "ReOrderBuf.hpp"
 #include "Tomasulo.hpp"
 #include <iostream>
 #include <vector>
@@ -26,7 +27,6 @@ InstBuf ib;
 //FpARF *FpArf;
 //IntRAT *IntRat;
 //FpRAT *FpRat;
-ReOrderBuf *ROB;
 
 //RS *memRS;
 RS_entry e_m, m_w, w_c;
@@ -51,6 +51,7 @@ int main()
 	RS<int, Ops> *addiRS;
 	RS<float, Ops> *addfRS;
 	RS<float, Ops> *mulfRS;
+	ReOrderBuf *ROB;
 	
     std::cout << "Begin main.cpp" << std::endl;
 	
@@ -70,7 +71,9 @@ int main()
 	addiRS = new RS<int, Ops>(parser.num_addiRS);
 	addfRS = new RS<float, Ops>(parser.num_addfRS);
 	mulfRS = new RS<float, Ops>(parser.num_mulfRS);
-
+	
+	ROB    = new ReOrderBuf(parser.num_ROB);
+	
 	// Print out ARF to test.
 	for (int i = 0; i < numARF; i ++)
 	{
@@ -108,10 +111,11 @@ int main()
     
 
 	std::cout << "Begin Tomasulo algorithm" << std::endl;
-	int rowNum = parser.instruction.size();
-	//Tomasulo Tomasulo(rowNum, parser.cycle_addi, parser.cycle_addf, parser.cycle_mulf, parser.cycle_mem_exe , parser.cycle_mem_mem);
-	Tomasulo Tomasulo(3, 1, 3, 20, 1 , 4);
-	Tomasulo.issue(IntARF, FpARF, addiRS, addfRS, mulfRS, IntRAT, FpRAT);
+	Tomasulo *Tommy;
+	Tommy = new Tomasulo(parser.instruction.size(), parser.cycle_addi, parser.cycle_addf, parser.cycle_mulf, 
+		parser.cycle_mem_exe, parser.cycle_mem_mem, IntARF, FpARF, addiRS, addfRS, mulfRS, IntRAT, FpRAT, ROB);
+	Tommy->issue();
+	std::cout << "After\n";
     /*
 	// ...
 	// The actual issue/ex/mem/wb/commit process happens here
@@ -158,6 +162,8 @@ int main()
 	delete addiRS;
 	delete addfRS;
 	delete mulfRS;
+	delete ROB;
+	delete Tommy;
 	
 	return 0;
 }
