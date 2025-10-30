@@ -1,0 +1,25 @@
+
+# Consider dependencies only in project.
+set(CMAKE_DEPENDS_IN_PROJECT_ONLY OFF)
+
+# The set of languages for which implicit dependencies are needed:
+set(CMAKE_DEPENDS_LANGUAGES
+  )
+
+# The set of dependency files which are needed:
+set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "C:/ECE2162_Tomasulo_Fall2025/lib/ReORderBuf.cpp" "lib/CMakeFiles/standard_classes.dir/ReORderBuf.cpp.obj" "gcc" "lib/CMakeFiles/standard_classes.dir/ReORderBuf.cpp.obj.d"
+  "C:/ECE2162_Tomasulo_Fall2025/lib/Tomasulo.cpp" "lib/CMakeFiles/standard_classes.dir/Tomasulo.cpp.obj" "gcc" "lib/CMakeFiles/standard_classes.dir/Tomasulo.cpp.obj.d"
+  "C:/ECE2162_Tomasulo_Fall2025/lib/input_parser_v2.cpp" "lib/CMakeFiles/standard_classes.dir/input_parser_v2.cpp.obj" "gcc" "lib/CMakeFiles/standard_classes.dir/input_parser_v2.cpp.obj.d"
+  )
+
+# Targets to which this target links which contain Fortran sources.
+set(CMAKE_Fortran_TARGET_LINKED_INFO_FILES
+  )
+
+# Targets to which this target links which contain Fortran sources.
+set(CMAKE_Fortran_TARGET_FORWARD_LINKED_INFO_FILES
+  )
+
+# Fortran module output directory.
+set(CMAKE_Fortran_TARGET_MODULE_DIR "")

@@ -5,6 +5,7 @@
 #include "ARF.hpp"
 #include "RS.hpp"
 #include "RAT.hpp"
+#include "ReOrderBuf.hpp"
 
 // A timing type that will contain the start and end cycle.
 // If an instruction just goes for one cycle, then both values will be identical.
@@ -34,11 +35,21 @@ class Tomasulo
 		const int numExFPMult;
 		const int numExLoadStore;
 		const int numMemLoadStore;
+		ARF<int> *IntARF;
+		ARF<float> *FpARF;
+		RS<int, Ops> *addiRS;
+		RS<float, Ops> *addfRS;
+		RS<float, Ops> *mulfRS;
+		RAT<int> *IntRAT; 
+		RAT<float> *FpRAT;
+		ReOrderBuf *ROB;
 
     public:
 		
-		Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore);
-		bool issue(ARF<int> *IntARF, ARF<float> *FpARF, RS<int, Ops> *addiRS, RS<float, Ops> *addfRS, RS<float, Ops> *mulfRS, RAT<int> *IntRAT, RAT<float> *FpRAT);
+		Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore,
+			ARF<int> *IntARF, ARF<float> *FpARF, RS<int, Ops> *addiRS, RS<float, Ops> *addfRS, RS<float, Ops> *mulfRS, RAT<int> *IntRAT, 
+				RAT<float> *FpRAT, ReOrderBuf *ROB);
+		bool issue();
 		bool execute();
 		bool mem();
 		bool wb();
