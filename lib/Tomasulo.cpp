@@ -1,11 +1,20 @@
 #include "Tomasulo.hpp"
 
 
-Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore)
+Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore,
+			ARF<int> *IntARF, ARF<float> *FpARF, RS<int, Ops> *addiRS, RS<float, Ops> *addfRS, RS<float, Ops> *mulfRS, RAT<int> *IntRAT, 
+				RAT<float> *FpRAT, ReOrderBuf *ROB)
 	: numRow(numberInstructions) , numberInstructions(numberInstructions), numExInt(numExInt), numExFPAdd(numExFPAdd), numExFPMult(numExFPMult),
 		numExLoadStore(numExLoadStore), numMemLoadStore(numMemLoadStore)
 {
-
+	IntARF = IntARF;
+	FpARF  = FpARF;
+	addiRS = addiRS;
+	addfRS = addfRS;
+	mulfRS = mulfRS;
+	IntRAT = IntRAT;
+	FpRAT  = FpRAT;
+	ROB    = ROB;
 }
 
 
@@ -17,7 +26,7 @@ Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int num
 // ROB
 // RS
 // Instructions
-bool Tomasulo::issue(ARF<int> *IntARF, ARF<float> *FpARF, RS<int, Ops> *addiRS, RS<float, Ops> *addfRS, RS<float, Ops> *mulfRS, RAT<int> *IntRAT, RAT<float> *FpRAT)
+bool Tomasulo::issue()
 {
 	std::cout << "In issue.\n";
 	/*
@@ -162,6 +171,7 @@ bool Tomasulo::issue(ARF<int> *IntARF, ARF<float> *FpARF, RS<int, Ops> *addiRS, 
 
 
 	// Branch prediction will eventually happen here.
+	std::cout << "end\n";
 }
 
 
