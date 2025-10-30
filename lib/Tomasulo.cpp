@@ -1,8 +1,8 @@
 #include "Tomasulo.hpp"
 
 
-Tomasulo::Tomasulo(int numRow, int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore)
-	: numRow(numRow) , numberInstructions(numberInstructions), numExInt(numExInt), numExFPAdd(numExFPAdd), numExFPMult(numExFPMult),
+Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore)
+	: numRow(numberInstructions) , numberInstructions(numberInstructions), numExInt(numExInt), numExFPAdd(numExFPAdd), numExFPMult(numExFPMult),
 		numExLoadStore(numExLoadStore), numMemLoadStore(numMemLoadStore)
 {
 
@@ -17,8 +17,10 @@ Tomasulo::Tomasulo(int numRow, int numberInstructions, int numExInt, int numExFP
 // ROB
 // RS
 // Instructions
-bool Tomasulo::issue(ARF<int> IntARF, ARF<float> FpARF)
+bool Tomasulo::issue(ARF<int> *IntARF, ARF<float> *FpARF, RS<int, Ops> *addiRS, RS<float, Ops> *addfRS, RS<float, Ops> *mulfRS, RAT<int> *IntRAT, RAT<float> *FpRAT)
 {
+	std::cout << "In issue.\n";
+	/*
 	bool success = false;
 
     // Loop over all instructions to find the first one that hasn't been issued
@@ -150,9 +152,8 @@ bool Tomasulo::issue(ARF<int> IntARF, ARF<float> FpARF)
     return success;
 
 
+*/
 
-
-	
 	
 	// Read operands in registers (if not available yet, record which RS will eventually produce the result)
 	// Register renaming, update RAT with source/target for new ROB entry

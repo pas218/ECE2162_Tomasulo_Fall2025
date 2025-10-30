@@ -3,6 +3,8 @@
 #define TOMASULO_H
 #include <vector>
 #include "ARF.hpp"
+#include "RS.hpp"
+#include "RAT.hpp"
 
 // A timing type that will contain the start and end cycle.
 // If an instruction just goes for one cycle, then both values will be identical.
@@ -35,8 +37,8 @@ class Tomasulo
 
     public:
 		
-		Tomasulo(int numRow, int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore);
-		bool issue(ARF<int> IntARF, ARF<float> FpARF);
+		Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore);
+		bool issue(ARF<int> *IntARF, ARF<float> *FpARF, RS<int, Ops> *addiRS, RS<float, Ops> *addfRS, RS<float, Ops> *mulfRS, RAT<int> *IntRAT, RAT<float> *FpRAT);
 		bool execute();
 		bool mem();
 		bool wb();
