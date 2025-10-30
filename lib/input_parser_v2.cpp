@@ -17,10 +17,9 @@ extern item dst,src,tgt;
 extern InstBuf ib;
 //extern IntARF *IntArf;
 //extern FpARF *FpArf;
-extern IntRAT *IntRat;
-extern FpRAT *FpRat;
+//extern IntRAT *IntRat;
+//extern FpRAT *FpRat;
 extern ReOrderBuf *ROB;
-extern RS *addiRS,*addfRS,*mulfRS,*memRS;
 extern AddIUnit *addiunit, *memunit, *memunit2;
 extern AddFUnit *addfunit;
 extern MulFUnit *mulfunit;
@@ -90,6 +89,7 @@ ReOrderBuf::ReOrderBuf(int n)
     table = new ReOrderBuf_entry[n];
 }
 
+/*
 RS::RS(int capacity)
 {
     n = capacity;
@@ -111,7 +111,7 @@ bool RS::full()
 {
     return size == n;
 }
-
+*/
 AddIUnit::AddIUnit()
 {
     empty = true;
@@ -266,10 +266,7 @@ void InputParser::parse(const std::string &filename)
 	
     
     // Initalize reservation stations and functional units (this will likely change later)
-	addiRS = new RS(num_addiRS);
-	addfRS = new RS(num_addfRS);
-	mulfRS = new RS(num_mulfRS);
-	memRS = new RS(num_memRS);
+	//memRS = new RS(num_memRS);
 	addiunit = new AddIUnit[num_addi];
 	memunit= new AddIUnit;
 	memunit2= new AddIUnit;
