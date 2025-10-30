@@ -2,6 +2,7 @@
 #ifndef TOMASULO_H
 #define TOMASULO_H
 #include <vector>
+#include "ARF.hpp"
 
 // A timing type that will contain the start and end cycle.
 // If an instruction just goes for one cycle, then both values will be identical.
@@ -21,16 +22,21 @@ class Tomasulo
 		// Memory = 2
 		// Write back = 3
 		// Commit = 4
-		// So, to get instruction 1 wb column, it would be 1*4
+		// So, to get instruction 1 wb column, it would be 1*5 + 3.
         std::vector<timing_type> timingDiagram;
 		const int numRow;
 		const int numCol = 5;
-		int numberInstructions
-		
+		const int numberInstructions;
+		const int numExInt;
+		const int numExFPAdd;
+		const int numExFPMult;
+		const int numExLoadStore;
+		const int numMemLoadStore;
+
     public:
 		
-		
-		bool issue();
+		Tomasulo(int numRow, int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore);
+		bool issue(ARF<int> IntARF, ARF<float> FpARF);
 		bool execute();
 		bool mem();
 		bool wb();
@@ -38,7 +44,5 @@ class Tomasulo
 		
 };
 
-
-#include "ARF.tpp"
 
 #endif
