@@ -109,37 +109,11 @@ int main()
         // We could consider creating a new file for each of the functions below if there will be a lot of helper functions,
         // or maybe just one with everything.
         issue();
-            // Fetch and decode instruction from instruction queue (record issue cycle for table)
-            // Check if there are free RS for instruction and ROB entry (stall if not available), then allocate for new instruction
-            // Read operands in registers (if not available yet, record which RS will eventually produce the result)
-            // Register renaming, update RAT with source/target for new ROB entry
-            // Branch prediction will eventually happen here.
         execute();
-            // Execute instructions once all operands are ready (record execute cycle for table)
-            // "Compete" to use functional unit (oldest first)
-            // Advance instruction count for each instruction in execution. Wait for the number of cycles read from the input before marking the instruction as ready (cycle_addi, cycle_addf, etc.)
-            // When an FU's execution completes, mark the RS entry as 'finished' so that it can be written on the next writeback cycle
-            // For load/store, also calculate effective address (does not occupy integer ALU to do this).
-            // Eventually, branch resolution will happen here
         mem();
-            // Record mem cycle for table
-            // Check for "forwarding-from-a-store" as mentioned in project document. It takes 1 cycle to perform the forwarding if a match is found. If not found then the load accesses the memory for data.
-            // Once a load returns from the memory or gets the value from a previous store, its entry in the load/store queue is cleared.
-            // Note that it is correct not to clear this entry, but the queue can quickly fill up, causing structure hazards for future loads/stores.
         writeback();
-            // Broadcast results onto the CDB (other instructions waiting on it will need to pick it up), or buffer if the CDB is full
-            // Write result back to RS and ROB entry (record WB cycle for table)
-            // Mark the ready/finished bit in ROB since the instruction has completed execution
-            // Free reservation stations for future reuse when finished
-            // Store instructions write to memory in this stage
         commit();
-            // Commit an instruction when it is the oldest in the ROB (ROB head points to it) and the ready/finished bit is set.
-            // Note: we can only commit 1 instruction per cycle.
-            // If store instructions --> write into memory
-            // If other instruction --> write to ARF
-            // Free ROB entry and update RAT (clear aliases). Advance ROB head to the next instruction.
-            // Mark instruction as committed (record commit cycle for table).
-
+        
 
 
     }
