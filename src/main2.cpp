@@ -2,8 +2,9 @@
 //#include "../lib/ARF.hpp"
 #include "ARF.hpp"
 #include "CDB.hpp"
+#include "RS.hpp"
 #include "input_parser_v2.hpp"
-
+#include "Tomasulo.hpp"
 #include <iostream>
 #include <vector>
 
@@ -23,11 +24,11 @@ InstBuf ib;
 
 //IntARF *IntArf;
 //FpARF *FpArf;
-IntRAT *IntRat;
-FpRAT *FpRat;
+//IntRAT *IntRat;
+//FpRAT *FpRat;
 ReOrderBuf *ROB;
 
-RS *addiRS,*addfRS,*mulfRS,*memRS;
+//RS *memRS;
 RS_entry e_m, m_w, w_c;
 AddIUnit *addiunit, *memunit, *memunit2;
 AddFUnit *addfunit;
@@ -45,6 +46,11 @@ int main()
 	
 	ARF<int> *IntARF;
 	ARF<float> *FpARF;
+	RAT<int> *IntRAT;
+	RAT<float> *FpRAT;
+	RS<int, Ops> *addiRS;
+	RS<float, Ops> *addfRS;
+	RS<float, Ops> *mulfRS;
 	
     std::cout << "Begin main.cpp" << std::endl;
 	
@@ -58,6 +64,12 @@ int main()
 	
 	IntARF = new ARF<int>(parser.intARFValues);
     FpARF  = new ARF<float>(parser.floatARFValues);
+	IntRAT = new RAT<int>(numARF);
+	FpRAT  = new RAT<float>(numARF);
+
+	addiRS = new RS<int, Ops>(parser.num_addiRS);
+	addfRS = new RS<float, Ops>(parser.num_addfRS);
+	mulfRS = new RS<float, Ops>(parser.num_mulfRS);
 
 	// Print out ARF to test.
 	for (int i = 0; i < numARF; i ++)
@@ -96,7 +108,10 @@ int main()
     
 
 	std::cout << "Begin Tomasulo algorithm" << std::endl;
-
+	int rowNum = parser.instruction.size();
+	//Tomasulo Tomasulo(rowNum, parser.cycle_addi, parser.cycle_addf, parser.cycle_mulf, parser.cycle_mem_exe , parser.cycle_mem_mem);
+	Tomasulo Tomasulo(3, 1, 3, 20, 1 , 4);
+	Tomasulo.issue(IntARF, FpARF, addiRS, addfRS, mulfRS, IntRAT, FpRAT);
     /*
 	// ...
 	// The actual issue/ex/mem/wb/commit process happens here
@@ -134,10 +149,15 @@ int main()
     myARF.changeValue(0, 5); 
 	std::cout << "The new value of ARF(0) " << myARF.getValue(0) << std::endl;
 	*/
-	
+
 	// Delete dynamically allocated poiters;
 	delete IntARF;
     delete FpARF;
+	delete IntRAT;
+	delete FpRAT;
+	delete addiRS;
+	delete addfRS;
+	delete mulfRS;
 	
 	return 0;
 }

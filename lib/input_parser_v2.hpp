@@ -147,6 +147,7 @@ public:
 	~FpARF(){delete[]table;}
 };
 */
+/*
 class RAT
 {
 public:
@@ -172,7 +173,7 @@ public:
 	FpRAT(int);
 	~FpRAT(){delete[]table;}
 };
-
+*/
 
 class ReOrderBuf_entry
 {
@@ -231,6 +232,7 @@ public:
 	RS_entry():time(0),icount(0),empty(1){};
 };
 
+/*
 class RS
 {
 public:
@@ -246,7 +248,7 @@ public:
 	RS(int );
 	~RS(){delete[]table;}
 };
-
+*/
 class AddIUnit
 {
 public:
