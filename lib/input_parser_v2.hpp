@@ -20,9 +20,15 @@ static constexpr char DELIM3[] = " ,\t()";
 
 typedef std::pair <int,float> mem_unit;
 
+// 
+// 0-1 integer adder
+// 2-3 floating point adder
+// 4 floating point multiplier
+// 5-6 memory
+//  7-8 branch
 enum Operation
 {
-	addi,
+	addi = 0,
 	subi,
 	addf,
 	subf,

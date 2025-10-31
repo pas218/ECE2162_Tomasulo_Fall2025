@@ -3,18 +3,30 @@
 
 Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore,
 			ARF<int> *IntARF, ARF<float> *FpARF, RS<int, Ops> *addiRS, RS<float, Ops> *addfRS, RS<float, Ops> *mulfRS, RAT<int> *IntRAT, 
-				RAT<float> *FpRAT, ReOrderBuf *ROB)
+				RAT<float> *FpRAT, ReOrderBuf *ROB, std::vector<inst> &instruction)
 	: numRow(numberInstructions) , numberInstructions(numberInstructions), numExInt(numExInt), numExFPAdd(numExFPAdd), numExFPMult(numExFPMult),
 		numExLoadStore(numExLoadStore), numMemLoadStore(numMemLoadStore)
 {
-	this->IntARF = IntARF;
-	this->FpARF  = FpARF;
-	this->addiRS = addiRS;
-	this->addfRS = addfRS;
-	this->mulfRS = mulfRS;
-	this->IntRAT = IntRAT;
-	this->FpRAT  = FpRAT;
-	this->ROB    = ROB;
+	this->IntARF      = IntARF;
+	this->FpARF       = FpARF;
+	this->addiRS      = addiRS;
+	this->addfRS      = addfRS;
+	this->mulfRS      = mulfRS;
+	this->IntRAT      = IntRAT;
+	this->FpRAT       = FpRAT;
+	this->ROB         = ROB;
+	this->instruction = instruction;
+	robPointer        = 0;
+	done              = 0;
+	currentCycle      = 1;
+	
+	for(int i = 0; i < numRow*numCol; i++)
+	{
+		timing_type temp;
+		temp.startCycle = 0;
+		temp.endCycle = 0;
+		timingDiagram.push_back(temp);
+	}
 }
 
 
@@ -33,10 +45,11 @@ bool Tomasulo::issue()
 	std::cout << IntARF->getValue(2) << std::endl;
 	std::cout << std::to_string(FpARF->getValue(2)) << std::endl; 
 	std::cout << "Now the RAT.\n";
-	std::cout << IntRAT->getValue(2).locationType << IntRAT->getValue(2).locationNumber << std::endl;
+	std::cout << IntRAT->getValue(2)->locationType << IntRAT->getValue(2)->locationNumber << std::endl;
 	
 	bool success = false;
-/*
+
+
     // Loop over all instructions to find the first one that hasn't been issued
     for (size_t i = 0; i < numberInstructions; ++i)
     {
@@ -47,36 +60,40 @@ bool Tomasulo::issue()
 
         int freeRS = -1;
         int freeROB = -1;
-
+		int operationType = -1;
+		
 		// Check if there is a free RS for instruction (stall if not available)
         if (ins.opcode == addi || ins.opcode == subi)
         {
-            for (int i = 1; i < addiRS->size; i++)
+            for (int i = 0; i < addiRS->getSize(); i++)
 			{
-                if (addiRS->table[i].robLocation == -1)
+                if (addiRS->getValue(i)->robLocation == -1)
 				{
 					freeRS = i;
+					operationType = 0;
 					break;
 				}
 			}
         }
         else if (ins.opcode == addf || ins.opcode == subf)
         {
-            for (int i = 1; i < addfRS->size; i++)
+            for (int i = 0; i < addfRS->getSize(); i++)
 			{
-                if (addfRS->table[i].robLocation == -1)
+                if (addfRS->getValue(i)->robLocation == -1)
 				{
 					freeRS = i; break;
+					operationType = 1;
 				}
 			}
         }
         else if (ins.opcode == mulf)
         {
-            for (int i = 1; i < mulfRS->size; i++)
+            for (int i = 0; i < mulfRS->getSize(); i++)
 			{
-                if (mulfRS->table[i].robLocation == -1)
+                if (mulfRS->getValue(i)->robLocation == -1)
 				{
 					freeRS = i;
+					operationType = 1;
 					break;
 				}
 			}
@@ -89,17 +106,14 @@ bool Tomasulo::issue()
 		}
 
 
-		// Check if there is a free ROB entry for instruction (stall if not available)
-		for (int i = 1; i < ROB->size; i++)
-        {
-			if (ROB->table[i].id == 0) // If ROB ID is 0, it's free
-            {
-                freeROB = i;
-                ROB->table[i].id = i + 1; // set ID to indicate it's no longer free
-                ROB->table[i].dst_id = ins.rd.id;
-                ROB->table[i].cmt_flag = 0;
-                break;
-            }
+		
+		if (ROB->full() == 0) // If ROB ID is 0, it's free
+		{
+			ROB->table[robPointer].id = operationType; // set ID to indicate it's no longer free
+			freeROB = robPointer;
+			ROB->table[robPointer].dst_id = ins.rd.id;
+			ROB->table[robPointer].cmt_flag = 0;
+			robPointer++;
 		}
 
 		// If there are no free ROB entries, we must stall (success is false)
@@ -111,51 +125,49 @@ bool Tomasulo::issue()
         // Fill RS using the fields for each that are defined in RS.hpp
         if (ins.opcode == addi)
 		{
-			addiRS->table[freeRS].operation = ADD;
+			addiRS->changeOperation(freeRS, ADD);
 		}
         else if (ins.opcode == subi)
 		{
-			addiRS->table[freeRS].operation = SUB;
+			addiRS->changeOperation(freeRS, SUB);
 		}
         else if (ins.opcode == addf)
 		{
-			addfRS->table[freeRS].operation = FP_ADD;
+			addfRS->changeOperation(freeRS, ADD);
 		}
         else if (ins.opcode == subf)
 		{
-			addfRS->table[freeRS].operation = FP_SUB;
+			addfRS->changeOperation(freeRS, SUB);
 		}
         else if (ins.opcode == mulf)
 		{
-			mulfRS->table[freeRS].operation = FP_MULT;
+			mulfRS->changeOperation(freeRS, MULT);
 		}
 
         if (ins.opcode == addi || ins.opcode == subi)
         {
-            addiRS->table[freeRS].robLocation = freeROB + 1;
-            addiRS->table[freeRS].value0 = IntARF->table[ins.rs.id].value;
-            addiRS->table[freeRS].value1 = IntARF->table[ins.rt.id].value;
-            addiRS->table[freeRS].robDependency0 = -1;
-            addiRS->table[freeRS].robDependency1 = -1; // Assume no dependency for now?
+            addiRS->changeROBLocation(freeRS, freeROB);
+            addiRS->changeRSVal0(freeRS, IntARF->getValue(ins.rs.id));
+            addiRS->changeRSVal1(freeRS, IntARF->getValue(ins.rt.id));
+            addiRS->changeROBDependency(freeRS, -1, -1); // Assume no dependency for now?
         }
         else if (ins.opcode == addf || ins.opcode == subf)
         {
-            addfRS->table[freeRS].robLocation = freeROB + 1;
-            addfRS->table[freeRS].value0 = FpARF->table[ins.rs.id].value;
-            addfRS->table[freeRS].value1 = FpARF->table[ins.rt.id].value;
-            addfRS->table[freeRS].robDependency0 = -1;
-            addfRS->table[freeRS].robDependency1 = -1; // Assume no dependency for now?
+			addfRS->changeROBLocation(freeRS, freeROB);
+            addfRS->changeRSVal0(freeRS, IntARF->getValue(ins.rs.id));
+            addfRS->changeRSVal1(freeRS, IntARF->getValue(ins.rt.id));
+            addfRS->changeROBDependency(freeRS, -1, -1); // Assume no dependency for now?
         }
         else if (ins.opcode == mulf)
         {
-            mulfRS->table[freeRS].robLocation = freeROB + 1;
-            mulfRS->table[freeRS].value0 = FpARF->table[ins.rs.id].value;
-            mulfRS->table[freeRS].value1 = FpARF->table[ins.rt.id].value;
-            mulfRS->table[freeRS].robDependency0 = -1;
-            mulfRS->table[freeRS].robDependency1 = -1; // Assume no dependency for now?
+            mulfRS->changeROBLocation(freeRS, freeROB);
+            mulfRS->changeRSVal0(freeRS, IntARF->getValue(ins.rs.id));
+            mulfRS->changeRSVal1(freeRS, IntARF->getValue(ins.rt.id));
+            mulfRS->changeROBDependency(freeRS, -1, -1); // Assume no dependency for now?
         }
 
 		// Since issue was successful, record issue cycle for timing table using gloabl counter
+		currentCycle++;
         ins.t_issue = currentCycle;
         success = true;
 
@@ -165,8 +177,6 @@ bool Tomasulo::issue()
 
     return success;
 
-
-*/
 
 	
 	// Read operands in registers (if not available yet, record which RS will eventually produce the result)
@@ -252,4 +262,135 @@ bool Tomasulo::commit()
 
 
 	return success;
+}
+
+timing_type Tomasulo::getValue(int numInstr, int numCycle)
+{
+	return timingDiagram[numInstr*numCol + numCycle];
+}
+
+void Tomasulo::printARF(bool select) // 0 for integer, 1 for float.
+{
+	std::cout << "Printing out: ";
+	if (!select)
+	{
+		std::cout << "IntARF\n";
+		for (int i = 0; i < IntARF->getSize(); i++)
+		{
+			std::cout << "R" << i << ": " << IntARF->getValue(i) << std::endl;
+		}
+	}
+	else
+	{
+		std::cout << "FpARF\n";
+		for (int i = 0; i < FpARF->getSize(); i++)
+		{
+			std::cout << "F" << i << ": " << std::to_string(FpARF->getValue(i)) << std::endl;
+		}
+	}
+}
+void Tomasulo::printRAT(bool select) // 0 for iteger, 1 for float.
+{
+	std::cout << "Printing out: ";
+	if (!select)
+	{
+		std::cout << "IntRAT\n";
+		std::cout << "Num locations: " << IntRAT->getSize() << std::endl;
+		for (int i = 0; i < IntRAT->getSize(); i++)
+		{
+			std::cout << i << ": " << IntRAT->getValue(i)->locationType << IntRAT->getValue(i)->locationNumber << std::endl;
+		}
+	}
+	else
+	{
+		std::cout << "FpRAT\n";
+		for (int i = 0; i < FpRAT->getSize(); i++)
+		{
+			std::cout << i << ": " << FpRAT->getValue(i)->locationType << FpRAT->getValue(i)->locationNumber << std::endl;
+		}
+	}
+}
+
+/*
+class ReOrderBuf_entry
+{
+public:
+	int id;				//reorder buffer id is 0 or 1. 0 indicates integer, 1 indicates float. -1 indicates it is free.
+	int dst_id;			// destination register id.
+	float value;
+	int cmt_flag;		// 0 for not commit, 1 for commit;	
+ 
+	ReOrderBuf_entry():id(0),dst_id(0),value(0.0),cmt_flag(0){}
+};
+
+class ReOrderBuf
+{
+public:
+	ReOrderBuf_entry *table;
+	int head;
+	int tail;
+	int n;
+	int size;
+
+	int get_size();
+	bool empty();
+	bool full();
+	
+	ReOrderBuf(int);
+	~ReOrderBuf(){delete[]table;}
+};
+*/
+void Tomasulo::printROB()
+{
+	std::cout << "Printing out ROB:\n";
+	for (int i = 0; i < ROB->size; i++)
+	{
+		std::cout << i << ": " << "id: " << ROB->table[i].id << ", dst_id: " 
+			<< ROB->table[i].dst_id << ", value: " << std::to_string(ROB->table[i].value)
+				<< ", cmt_flag: " << ROB->table[i].cmt_flag << std::endl;
+	}
+}
+		
+void Tomasulo::printOutTimingTable()
+{
+	std::cout << "Printing out timing table:\n";
+	std::cout << "  IS, EX, MEM, WB, CM\n";
+	for (int i = 0; i < numRow; i++)
+	{
+		for (int j = 0; j < numCol; j++)
+		{
+		std::cout << timingDiagram[i*numCol+j].startCycle << "," << timingDiagram[i*numCol+j].endCycle << " ";
+		}
+		std::cout << std::endl;
+	}
+}
+		
+bool Tomasulo::fullAlgorithm()
+{
+	bool keepGoing  = 0;
+	while (!done)
+	{
+		keepGoing = issue();
+		if (keepGoing)
+		{
+				keepGoing = execute();
+		}
+		if (keepGoing)
+		{
+				keepGoing = execute();
+		}
+		if (keepGoing)
+		{
+				keepGoing = mem();
+		}
+		if (keepGoing)
+		{
+				keepGoing = wb();
+		}
+		if (keepGoing)
+		{
+				keepGoing = commit();
+		}
+	}
+	return done;
 }

@@ -1,2 +1,0 @@
-C:\mingw64\bin\ar.exe qc libstandard_classes.a CMakeFiles/standard_classes.dir/input_parser_v2.cpp.obj CMakeFiles/standard_classes.dir/Tomasulo.cpp.obj CMakeFiles/standard_classes.dir/ReORderBuf.cpp.obj
-C:\mingw64\bin\ranlib.exe libstandard_classes.a

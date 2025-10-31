@@ -75,6 +75,12 @@ RS<T, Op>::~RS(){
 }
 
 template <typename T, typename Op>
+int RS<T, Op>::getSize()
+{
+	return numStations;
+}
+
+template <typename T, typename Op>
 bool RS<T, Op>::changeROBLocation(int stationNumber, int robNumber)
 {
 	bool returnVal = checkBounds(stationNumber) && (takenRobSpots.count(stationNumber) == 0);
