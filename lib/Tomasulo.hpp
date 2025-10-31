@@ -65,7 +65,7 @@ class Tomasulo
 		void printARF(bool select); // 0 for integer, 1 for float.
 		void printRAT(bool select); // 0 for iteger, 1 for float.
 		void printROB();
-		void printRS(int select);
+		void printRS(int select); // 0 = addiRS, 1 = addfRS, mulfRS = 2
 		void printOutTimingTable();
 		bool fullAlgorithm();
 		
