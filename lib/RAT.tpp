@@ -4,7 +4,7 @@ template <typename T>
 RAT<T>::RAT()
 {
 	// Arbitrarily decide 32 locations.
-    numLocations = 32;
+    this->numLocations = 32;
     locationsPtr = new RAT_type[32];
 	for (int i = 0; i < 32; i++)
 	{
@@ -23,7 +23,7 @@ RAT<T>::RAT()
 template <typename T>
 RAT<T>::RAT(int numLocations)
 {
-	numLocations = numLocations;
+	this->numLocations = numLocations;
     locationsPtr = new RAT_type[numLocations];
 	for (int i = 0; i < numLocations; i++)
 	{
@@ -43,6 +43,12 @@ template <typename T>
 RAT<T>::~RAT()
 {
 	delete[] locationsPtr;
+}
+
+template<typename T>
+int RAT<T>::getSize()
+{
+	return numLocations;
 }
 
 template <typename T>
@@ -75,12 +81,12 @@ bool  RAT<T>::changeValue(int locationNumber, bool isARF, int robNumber)
 }
 
 template <typename T>
-RAT_type RAT<T>::getValue(int locationNumber)
+RAT_type* RAT<T>::getValue(int locationNumber)
 {	
-	RAT_type returnVal = locationsPtr[0];
+	RAT_type *returnVal = locationsPtr;
 	if (locationNumber < numLocations)
 	{
-		returnVal = locationsPtr[locationNumber];
+		returnVal = &locationsPtr[locationNumber];
 	}
 	return returnVal;
 }

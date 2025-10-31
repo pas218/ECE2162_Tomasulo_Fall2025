@@ -60,6 +60,7 @@ class RS
         RS(int numLocations);
 		~RS();
 		
+		int getSize();
         // Change the value of a location. Returns 1 if successful, otherwise return 0.
 		// The value -1 indicates an emplty spot.
         bool changeROBLocation(int stationNumber, int robNumber);

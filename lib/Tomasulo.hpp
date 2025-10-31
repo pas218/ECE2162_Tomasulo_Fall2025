@@ -6,6 +6,7 @@
 #include "RS.hpp"
 #include "RAT.hpp"
 #include "ReOrderBuf.hpp"
+#include "input_parser_v2.hpp"
 
 // A timing type that will contain the start and end cycle.
 // If an instruction just goes for one cycle, then both values will be identical.
@@ -27,6 +28,8 @@ class Tomasulo
 		// Commit = 4
 		// So, to get instruction 1 wb column, it would be 1*5 + 3.
         std::vector<timing_type> timingDiagram;
+		std::vector<inst> instruction;
+		
 		const int numRow;
 		const int numCol = 5;
 		const int numberInstructions;
@@ -35,6 +38,7 @@ class Tomasulo
 		const int numExFPMult;
 		const int numExLoadStore;
 		const int numMemLoadStore;
+		int robPointer;
 		ARF<int> *IntARF;
 		ARF<float> *FpARF;
 		RS<int, Ops> *addiRS;
@@ -43,17 +47,27 @@ class Tomasulo
 		RAT<int> *IntRAT; 
 		RAT<float> *FpRAT;
 		ReOrderBuf *ROB;
+		
+		bool done;
+		int currentCycle;
 
     public:
 		
 		Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore,
 			ARF<int> *IntARF, ARF<float> *FpARF, RS<int, Ops> *addiRS, RS<float, Ops> *addfRS, RS<float, Ops> *mulfRS, RAT<int> *IntRAT, 
-				RAT<float> *FpRAT, ReOrderBuf *ROB);
+				RAT<float> *FpRAT, ReOrderBuf *ROB, std::vector<inst> &instruction);
 		bool issue();
 		bool execute();
 		bool mem();
 		bool wb();
 		bool commit();
+		timing_type getValue(int numInstr, int numCycle);
+		void printARF(bool select); // 0 for integer, 1 for float.
+		void printRAT(bool select); // 0 for iteger, 1 for float.
+		void printROB();
+		void printRS(int select);
+		void printOutTimingTable();
+		bool fullAlgorithm();
 		
 };
 

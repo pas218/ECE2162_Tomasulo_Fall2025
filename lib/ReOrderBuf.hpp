@@ -1,6 +1,9 @@
 #include <string>
 #ifndef ROB_H
 #define ROB_H
+#include <cstdint>
+#include <iostream>
+
 struct InstBuf
 {
     int free;
@@ -11,7 +14,7 @@ struct InstBuf
 class ReOrderBuf_entry
 {
 public:
-	int id;				//reorder buffer id is 201 ~ 400, 0 for available entry.
+	int id;				//reorder buffer id is 0 or 1. 0 indicates integer, 1 indicates float. -1 indicates it is free.
 	int dst_id;			// destination register id.
 	float value;
 	int cmt_flag;		// 0 for not commit, 1 for commit;	
@@ -32,7 +35,7 @@ public:
 	bool empty();
 	bool full();
 	
-	ReOrderBuf(int);
+	ReOrderBuf(int n);
 	~ReOrderBuf(){delete[]table;}
 };
 
