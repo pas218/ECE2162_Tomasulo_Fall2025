@@ -7,14 +7,14 @@ Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int num
 	: numRow(numberInstructions) , numberInstructions(numberInstructions), numExInt(numExInt), numExFPAdd(numExFPAdd), numExFPMult(numExFPMult),
 		numExLoadStore(numExLoadStore), numMemLoadStore(numMemLoadStore)
 {
-	IntARF = IntARF;
-	FpARF  = FpARF;
-	addiRS = addiRS;
-	addfRS = addfRS;
-	mulfRS = mulfRS;
-	IntRAT = IntRAT;
-	FpRAT  = FpRAT;
-	ROB    = ROB;
+	this->IntARF = IntARF;
+	this->FpARF  = FpARF;
+	this->addiRS = addiRS;
+	this->addfRS = addfRS;
+	this->mulfRS = mulfRS;
+	this->IntRAT = IntRAT;
+	this->FpRAT  = FpRAT;
+	this->ROB    = ROB;
 }
 
 
@@ -28,10 +28,15 @@ Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int num
 // Instructions
 bool Tomasulo::issue()
 {
+	std::cout << "IntARF pointer inside issue: " << IntARF << std::endl;
 	std::cout << "In issue.\n";
-	/*
+	std::cout << IntARF->getValue(2) << std::endl;
+	std::cout << std::to_string(FpARF->getValue(2)) << std::endl; 
+	std::cout << "Now the RAT.\n";
+	std::cout << IntRAT->getValue(2).locationType << IntRAT->getValue(2).locationNumber << std::endl;
+	
 	bool success = false;
-
+/*
     // Loop over all instructions to find the first one that hasn't been issued
     for (size_t i = 0; i < numberInstructions; ++i)
     {
@@ -172,6 +177,7 @@ bool Tomasulo::issue()
 
 	// Branch prediction will eventually happen here.
 	std::cout << "end\n";
+	return success;
 }
 
 
