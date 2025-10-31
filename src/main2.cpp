@@ -74,13 +74,42 @@ int main()
 	
 	ROB    = new ReOrderBuf(parser.num_ROB);
 	
-	std::cout << "IntARF pointer outside: " << IntARF << std::endl;
-	// Print out ARF to test.
-	for (int i = 0; i < numARF; i ++)
-	{
-		std::cout << "IntARF[" << i << "] " << " = " << IntARF->getValue(i) << std::endl;
-		std::cout << "FloatARF[" << i << "] " << " = " << std::to_string(FpARF->getValue(i)) << std::endl;
+	/*
+	class inst
+{
+public:
+	Operation opcode;
+	item rd;
+	item rs;
+	item rt;
+	std::string name;
+	std::string sd_offset;
+	int t_issue;
+	int t_ex;
+	int t_mem;
+	int t_wb;
+	int t_commit;
+	bool cmt;
+	inst():t_issue(0),t_ex(0),t_mem(0),t_wb(0),t_commit(0),cmt(0){}
+	void reset(){
+		t_issue=0;
+		t_ex=0;
+		t_mem=0;
+		t_wb=0;
+		t_commit=0;
+		cmt=false;
 	}
+};
+*/
+/*
+	// Test out the instructions.
+	std::cout << "Instruction testing.\n";
+	for (int i = 0; i < parser.instruction.size(); i++)
+	{
+		std::cout << parser.instruction[i].opcode << " " << parser.instruction[i].rd.id << " " 
+			<< parser.instruction[i].rd.id << " " << parser.instruction[i].rt.id << std::endl;
+	}
+	*/
 
 	// I'm not sure if the CDB should be int or float...?
     CDB<int> intCDB(parser.num_CDB_buf);
@@ -114,8 +143,15 @@ int main()
 	std::cout << "Begin Tomasulo algorithm" << std::endl;
 	Tomasulo *Tommy;
 	Tommy = new Tomasulo(parser.instruction.size(), parser.cycle_addi, parser.cycle_addf, parser.cycle_mulf, 
-		parser.cycle_mem_exe, parser.cycle_mem_mem, IntARF, FpARF, addiRS, addfRS, mulfRS, IntRAT, FpRAT, ROB);
+		parser.cycle_mem_exe, parser.cycle_mem_mem, IntARF, FpARF, addiRS, addfRS, mulfRS, IntRAT, FpRAT, ROB, parser.instruction);
 	Tommy->issue();
+	Tommy->printOutTimingTable();
+	//Tommy->printRAT(false);
+	//Tommy->printRAT(true);
+	//Tommy->printARF(false);
+	//Tommy->printARF(true);
+	Tommy->printROB();
+	Tommy->printRAT(1);
 	std::cout << "After\n";
     /*
 	// ...
