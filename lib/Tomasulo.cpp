@@ -7,14 +7,14 @@ Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int num
 	: numRow(numberInstructions) , numberInstructions(numberInstructions), numExInt(numExInt), numExFPAdd(numExFPAdd), numExFPMult(numExFPMult),
 		numExLoadStore(numExLoadStore), numMemLoadStore(numMemLoadStore)
 {
-	IntARF = IntARF;
-	FpARF  = FpARF;
-	addiRS = addiRS;
-	addfRS = addfRS;
-	mulfRS = mulfRS;
-	IntRAT = IntRAT;
-	FpRAT  = FpRAT;
-	ROB    = ROB;
+	this->IntARF = IntARF;
+	this->FpARF  = FpARF;
+	this->addiRS = addiRS;
+	this->addfRS = addfRS;
+	this->mulfRS = mulfRS;
+	this->IntRAT = IntRAT;
+	this->FpRAT  = FpRAT;
+	this->ROB    = ROB;
 }
 
 
@@ -28,10 +28,15 @@ Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int num
 // Instructions
 bool Tomasulo::issue()
 {
+    std::cout << "IntARF pointer inside issue: " << IntARF << std::endl;
 	std::cout << "In issue.\n";
-	/*
-	bool success = false;
+    std::cout << IntARF->getValue(2) << std::endl;
+	std::cout << std::to_string(FpARF->getValue(2)) << std::endl; 
+	std::cout << "Now the RAT.\n";
+	std::cout << IntRAT->getValue(2).locationType << IntRAT->getValue(2).locationNumber << std::endl;
 
+	bool success = false;
+/*
     // Loop over all instructions to find the first one that hasn't been issued
     for (size_t i = 0; i < numberInstructions; ++i)
     {
@@ -172,13 +177,14 @@ bool Tomasulo::issue()
 
 	// Branch prediction will eventually happen here.
 	std::cout << "end\n";
+    return success;
 }
 
 
 // Classes we will need for execute stage
 bool Tomasulo::execute()
 {
-	bool success = 0;
+	bool success = false;
 	
 	// Execute instructions once all operands are ready (record execute cycle for table)
 	// "Compete" to use functional unit (oldest first)
@@ -196,54 +202,272 @@ bool Tomasulo::execute()
 }
 
 
+// Classes we will need for the mem cycle:
+// ROB
+// RS
+// Instructions
 bool Tomasulo::mem()
 {
-	bool success = 0;
+	bool success = false;
 	
-	
-	// Record mem cycle for table
-	// Check for "forwarding-from-a-store" as mentioned in project document. It takes 1 cycle to perform the forwarding if a match is found. If not found then the load accesses the memory for data.
-	// Once a load returns from the memory or gets the value from a previous store, its entry in the load/store queue is cleared.
-	// Note that it is correct not to clear this entry, but the queue can quickly fill up, causing structure hazards for future loads/stores.
+	// Go through instructions to find loads/stores ready for MEM stage
+    for (int i = 1; i < numberInstructions; i++)
+    {
+        inst &ins = instruction[i];
+
+        // Find the first load/store instruction that has completed execution but not mem yet.
+        if ((ins.t_ex == 1) && (ins.t_mem == 0) && (ins.opcode == load || ins.opcode == store))
+        {
+            // Record MEM cycle for the table
+            ins.t_mem = currentCycle;
+            success = true;
+
+            // TODO: check for "forwarding-from-a-store" as mentioned in project document
+            // (This is when previous store writes to same address).
+            // It takes 1 cycle to perform the forwarding if a match is found.
+            // If not found then the load accesses the memory for data.
+
+
+
+            // TODO: once a load returns from the memory or gets the value from a previous store, its entry in the load/store queue is cleared.
+	        // Note that it is correct not to clear this entry, but the queue can quickly fill up, causing structure hazards for future loads/stores.
         
+
+
+
+            // Only do one memory access per cycle, so break
+            break;
+        }
+    }
 
 
 	return success;
 }
 
 
+// Classes we will need for the wb cycle:
+// ARF
+// RAT
+// ROB
+// Instructions
 bool Tomasulo::wb()
 {
-	bool success = 0;
-	
+	bool success = false;
+	    
+	// Find the first instruction that finished MEM but not WB yet
+    for (int i = 1; i < numberInstructions; i++)
+    {
+        inst &ins = instruction[i];
+        bool readyForWB = false;
 
-	// Broadcast results onto the CDB (other instructions waiting on it will need to pick it up), or buffer if the CDB is full
-	// Write result back to RS and ROB entry (record WB cycle for table)
-	// Mark the ready/finished bit in ROB since the instruction has completed execution
-	// Free reservation stations for future reuse when finished
-	// Store instructions write to memory in this stage
-        
+        // We have to distinguish between memory and non-memory instructions.
+        // Loads and stores writeback after MEM. Other instructions writeback after EX.
+        if ((ins.opcode == load) || (ins.opcode == store))
+        {
+            // See if the memory instruction has completed MEM but not WB yet
+            if ((ins.t_mem > 0) && (ins.t_wb == 0))
+            {
+                readyForWB = true;
+            }
+        }
+        else
+        {
+            // Non-memory instructions will not have t_mem set, so check t_ex instead
+            if ((ins.t_ex > 0) && (ins.t_wb == 0))
+            {
+                readyForWB = true;
+            }
+        }
+
+        // If the instruction isn't ready for WB yet, check the next intruction in the next iteration
+        if (!readyForWB)
+            continue;
+
+        // Instruction is ready for write-back, so update the table and mark as successful
+        ins.t_wb = currentCycle;
+        success = true;
 
 
 
+
+        // TODO: set resultValue (what's written back and broadcast) based on the results from EX
+        double resultValue = 0.0;
+        if (ins.opcode == addi || ins.opcode == subi)
+        {
+            resultValue = 1; // TODO: resultValue = something, will come from EX stage?
+        }
+        else if (ins.opcode == addf || ins.opcode == subf)
+        {
+            resultValue = 1.0; // TODO: resultValue = something, will come from EX stage?
+
+        }
+        else if (ins.opcode == mulf)
+        {
+            resultValue = 1.0; // TODO: resultValue = something, will come from EX stage?
+        }
+        else if (ins.opcode == load)
+        {
+            resultValue = 1; // TODO: resultValue = something, will come from EX or MEM stage?
+        }
+
+
+
+
+        bool cdbPushed = false;
+
+        // Broadcast (push) results on CDB if there is room. Otherwise, we must buffer it.
+        // TODO: I'm not sure if we will actually have an intCDB and floatCDB or if these will be unified.
+        if (ins.opcode != store)
+        {
+            if (ins.opcode == addi || ins.opcode == subi)
+            {
+                // Try to push onto integer CDB. If it returns false, it's full.
+                if (!intCDB.push(ins.robID, ins.rd.id, (int)resultValue))
+                {
+                    std::cout << "Integer CDB full — instruction " << i << " will retry WB next cycle\n";
+                    continue;
+                }
+                else
+                {
+                    cdbPushed = true;
+                }
+            }
+            else
+            {
+                // Try to push onto float CDB. If it returns false, it's full.
+                if (!floatCDB.push(ins.robID, ins.rd.id, (float)resultValue))
+                {
+                    std::cout << "Float CDB full — instruction " << i << " will retry WB next cycle\n";
+                    continue;
+                }
+                else
+                {
+                    cdbPushed = true;
+                }
+            }
+        }
+
+        // Only update ROB and RS if we successfully broadcasted above
+        if ((cdbPushed == true) || (ins.opcode == store))
+        {
+            // Update the ROB entry and mark as ready to commit
+            for (int j = 0; j < ROB->size; j++)
+            {
+                if (ROB->table[j].id == ins.robID)
+                {
+                    ROB->table[j].value = resultValue;
+                    ROB->table[j].cmt_flag = 1;
+                    break;
+                }
+            }
+
+            // Free any RS entries that were waiting on this ROB entry to broadcast
+            for (int j = 0; j < addiRS->numStations; j++)
+            {
+                RS_type<int, Ops>* rs = addiRS->getValue(j);
+                if (rs->robDependency0 > 0 || rs->robDependency1 > 0)
+                {
+                    if (rs->robDependency0 == ins.robID || rs->robDependency1 == ins.robID)
+                    {
+                        addiRS->clearLocation(j);
+                    }
+                }
+            }
+            for (int j = 0; j < addfRS->numStations; j++)
+            {
+                RS_type<float, Ops>* rs = addfRS->getValue(j);
+                if (rs->robDependency0 > 0 || rs->robDependency1 > 0)
+                {
+                    if (rs->robDependency0 == ins.robID || rs->robDependency1 == ins.robID)
+                    {
+                        addfRS->clearLocation(j);
+                    }
+                }
+            }
+            for (int j = 0; j < mulfRS->numStations; j++)
+            {
+                RS_type<float, Ops>* rs = mulfRS->getValue(j);
+                if (rs->robDependency0 > 0 || rs->robDependency1 > 0)
+                {
+                    if (rs->robDependency0 == ins.robID || rs->robDependency1 == ins.robID)
+                    {
+                        mulfRS->clearLocation(j);
+                    }
+                }
+            }
+
+            // Store instructions write from the ROB into memory during the writeback stage
+            if (ins.opcode == store)
+            {
+                int addr = ins.rd.id;
+                if ((addr >= 0) && (addr < (int)memory.size()))
+                {
+                    memory[addr].first = (int)ROB->table[ins.robID].value;
+                }
+            }
+        }
+
+        // We can only writeback 1 instruction per cycle, so break
+        break;
+    }
 
 	return success;
 }
 
+
+// Classes we will need for the commit cycle:
+// ARF
+// RAT
+// ROB
+// Instructions
 bool Tomasulo::commit()
 {
-	bool success = 0;
-	
+	bool success = false;
 
-	// Commit an instruction when it is the oldest in the ROB (ROB head points to it) and the ready/finished bit is set.
-	// Note: we can only commit 1 instruction per cycle.
-	// If store instructions --> write into memory
-	// If other instruction --> write to ARF
-	// Free ROB entry and update RAT (clear aliases). Advance ROB head to the next instruction.
-	// Mark instruction as committed (record commit cycle for table).
+	// Get the ROB entry at the current head position
+    ReOrderBuf_entry &headEntry = ROB->table[ROB->head];
 
+	// Commit oldest instruction (head of ROB) if cmt_flag is set (is ready to commit)
+    if ((headEntry.id != 0) && (headEntry.cmt_flag == 1))
+    {
+        // Find matching instruction
+        for (int i = 1; i < numberInstructions; i++)
+        {
+            inst &ins = instruction[i];
 
+			// Find the first instruction that has been written back but not committed yet
+            if ((ins.t_wb > 0) && (ins.t_commit == 0))
+            {
+				// Mark instruction as committed (record commit cycle for table).
+                ins.t_commit = currentCycle;
+                ins.cmt = true;
+                success = true;
 
+                // If store instructions --> write into memory
+                if (ins.opcode == store)
+                {
+                    memory[ins.rd.id].first = (int)headEntry.value;
+                }
+				// If other instruction --> write to ARF
+                else
+                {
+                    IntARF->changeValue(ins.rd.id, (int)headEntry.value);
+                }
+
+				// We can only commit 1 instruction per cycle, so break
+                break;
+            }
+        }
+
+		// Free ROB entry and update RAT (clear aliases).
+		headEntry.id = 0;
+        headEntry.dst_id = 0;
+        headEntry.value = 0.0;
+        headEntry.cmt_flag = 0;
+
+        // Advance ROB head to the next instruction. This is a circular buffer index.
+        ROB->head = (ROB->head + 1) % ROB->size;
+    }
 
 	return success;
 }
