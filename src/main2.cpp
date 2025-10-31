@@ -67,7 +67,7 @@ int main()
     FpARF  = new ARF<float>(parser.floatARFValues);
 	IntRAT = new RAT<int>(numARF);
 	FpRAT  = new RAT<float>(numARF);
-
+	
 	addiRS = new RS<int, Ops>(parser.num_addiRS);
 	addfRS = new RS<float, Ops>(parser.num_addfRS);
 	mulfRS = new RS<float, Ops>(parser.num_mulfRS);
@@ -150,8 +150,9 @@ public:
 	//Tommy->printRAT(true);
 	//Tommy->printARF(false);
 	//Tommy->printARF(true);
-	Tommy->printROB();
-	Tommy->printRAT(1);
+	Tommy->printRS(0);
+	Tommy->printRS(1);
+	Tommy->printRS(2);
 	std::cout << "After\n";
     /*
 	// ...
