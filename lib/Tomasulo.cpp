@@ -350,7 +350,47 @@ void Tomasulo::printROB()
 				<< ", cmt_flag: " << ROB->table[i].cmt_flag << std::endl;
 	}
 }
-		
+	
+
+void Tomasulo::printRS(int select) // 0 = addiRS, 1 = addfRS, mulfRS = 2
+{
+	std::cout << "Printing out ";
+	if(select == 0)
+	{
+		std::cout << "Addi RS:\n";
+		for (int i = 0; i < addiRS->getSize(); i++)
+		{
+			std::cout << i << ": " << "Operation: " << addiRS->getValue(i)->operation << ", Rob Location: " << addiRS->getValue(i)->robLocation
+				<< ", Rob Dependency 0: " << addiRS->getValue(i)->robDependency0 << ", Rob Dependency 1: " << addiRS->getValue(i)->robDependency1
+					<< ", Value 0: " << addiRS->getValue(i)->value0 << ", Value 1: " << addiRS->getValue(i)->value1 << std::endl;
+		}
+	}
+	else if(select == 1)
+	{
+		std::cout << "Addf RS:\n";
+		for (int i = 0; i < addfRS->getSize(); i++)
+		{
+			std::cout << i << ": " << "Operation: " << addfRS->getValue(i)->operation << ", Rob Location: " << addfRS->getValue(i)->robLocation
+				<< ", Rob Dependency 0: " << addfRS->getValue(i)->robDependency0 << ", Rob Dependency 1: " << addfRS->getValue(i)->robDependency1
+					<< ", Value 0: " << std::to_string(addfRS->getValue(i)->value0) << ", Value 1: " << std::to_string(addfRS->getValue(i)->value1) << std::endl;
+		}
+	}
+	else if(select == 2)
+	{
+		std::cout << "Mulf RS:\n";
+		for (int i = 0; i < mulfRS->getSize(); i++)
+		{
+			std::cout << i << ": " << "Operation: " << mulfRS->getValue(i)->operation << ", Rob Location: " << mulfRS->getValue(i)->robLocation
+				<< ", Rob Dependency 0: " << mulfRS->getValue(i)->robDependency0 << ", Rob Dependency 1: " << mulfRS->getValue(i)->robDependency1
+					<< ", Value 0: " << std::to_string(mulfRS->getValue(i)->value0) << ", Value 1: " << std::to_string(mulfRS->getValue(i)->value1) << std::endl;
+		}
+	}
+	else
+	{
+		std::cout << "Invalid selection of RS table\n";
+	}
+}
+	
 void Tomasulo::printOutTimingTable()
 {
 	std::cout << "Printing out timing table:\n";
