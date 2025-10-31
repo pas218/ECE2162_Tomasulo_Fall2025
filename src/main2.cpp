@@ -74,6 +74,7 @@ int main()
 	
 	ROB    = new ReOrderBuf(parser.num_ROB);
 	
+	std::cout << "IntARF pointer outside: " << IntARF << std::endl;
 	// Print out ARF to test.
 	for (int i = 0; i < numARF; i ++)
 	{
