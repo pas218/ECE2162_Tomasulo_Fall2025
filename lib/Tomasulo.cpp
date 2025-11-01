@@ -40,20 +40,20 @@ Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int num
 // Instructions
 bool Tomasulo::issue()
 {
-	std::cout << "IntARF pointer inside issue: " << IntARF << std::endl;
-	std::cout << "In issue.\n";
-	std::cout << IntARF->getValue(2) << std::endl;
-	std::cout << std::to_string(FpARF->getValue(2)) << std::endl; 
-	std::cout << "Now the RAT.\n";
-	std::cout << IntRAT->getValue(2)->locationType << IntRAT->getValue(2)->locationNumber << std::endl;
+	//std::cout << "IntARF pointer inside issue: " << IntARF << std::endl;
+	//std::cout << "In issue.\n";
+	//std::cout << IntARF->getValue(2) << std::endl;
+	//std::cout << std::to_string(FpARF->getValue(2)) << std::endl; 
+	//std::cout << "Now the RAT.\n";
+	//std::cout << IntRAT->getValue(2)->locationType << IntRAT->getValue(2)->locationNumber << std::endl;
 	
 	bool success = false;
 
 
     // Loop over all instructions to find the first one that hasn't been issued
-    for (size_t i = 0; i < numberInstructions; ++i)
+    for (size_t h = 0; h < numberInstructions; ++h)
     {
-        inst &ins = instruction[i];
+        inst &ins = instruction[h];
 
 		// If the t_issue field is greater than 0, the instruction has already been issued
         if (ins.t_issue > 0) continue;
@@ -70,7 +70,7 @@ bool Tomasulo::issue()
                 if (addiRS->getValue(i)->robLocation == -1)
 				{
 					freeRS = i;
-					operationType = 0;
+					operationType = 0; // Interger operation.
 					break;
 				}
 			}
@@ -81,8 +81,9 @@ bool Tomasulo::issue()
 			{
                 if (addfRS->getValue(i)->robLocation == -1)
 				{
-					freeRS = i; break;
-					operationType = 1;
+					freeRS = i; 
+					operationType = 1; // FP operation.
+					break;
 				}
 			}
         }
@@ -93,7 +94,7 @@ bool Tomasulo::issue()
                 if (mulfRS->getValue(i)->robLocation == -1)
 				{
 					freeRS = i;
-					operationType = 1;
+					operationType = 1; // FP operation.
 					break;
 				}
 			}
@@ -107,13 +108,31 @@ bool Tomasulo::issue()
 
 
 		
-		if (ROB->full() == 0) // If ROB ID is 0, it's free
+		if (ROB->full() == 0)  // If full then 1. If not then 0.
 		{
 			ROB->table[robPointer].id = operationType; // set ID to indicate it's no longer free
 			freeROB = robPointer;
 			ROB->table[robPointer].dst_id = ins.rd.id;
 			ROB->table[robPointer].cmt_flag = 0;
-			robPointer++;
+			// Change the RAT.
+			if (operationType == 0)
+			{
+				IntRAT->changeValue(ins.rd.id, 0, freeROB);
+			}
+			else
+			{
+				FpRAT->changeValue(ins.rd.id, 0, freeROB);
+			}
+			if (ROB->full() == 0)
+			{
+				if (robPointer + 1 < ROB->size)
+				{
+						robPointer++;
+				}
+				else{
+					robPointer = 0;
+				}
+			}
 		}
 
 		// If there are no free ROB entries, we must stall (success is false)
@@ -167,6 +186,8 @@ bool Tomasulo::issue()
         }
 
 		// Since issue was successful, record issue cycle for timing table using gloabl counter
+		timingDiagram[h*numCol + 0].startCycle = currentCycle;
+		timingDiagram[h*numCol + 0].endCycle = currentCycle;
 		currentCycle++;
         ins.t_issue = currentCycle;
         success = true;
