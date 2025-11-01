@@ -145,6 +145,8 @@ public:
 	Tommy = new Tomasulo(parser.instruction.size(), parser.cycle_addi, parser.cycle_addf, parser.cycle_mulf, 
 		parser.cycle_mem_exe, parser.cycle_mem_mem, IntARF, FpARF, addiRS, addfRS, mulfRS, IntRAT, FpRAT, ROB, parser.instruction);
 	Tommy->issue();
+	Tommy->issue();
+	Tommy->issue();
 	Tommy->printOutTimingTable();
 	//Tommy->printRAT(false);
 	//Tommy->printRAT(true);
@@ -152,7 +154,9 @@ public:
 	//Tommy->printARF(true);
 	Tommy->printRS(0);
 	Tommy->printRS(1);
-	Tommy->printRS(2);
+	Tommy->printROB();
+	Tommy->printRAT(0);
+	Tommy->printRAT(1);
 	std::cout << "After\n";
     /*
 	// ...
