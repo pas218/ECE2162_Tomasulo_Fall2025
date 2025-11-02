@@ -30,7 +30,13 @@ public:
 	int tail;
 	int n;
 	int size;
-
+	
+	// Returns the ROB address of the dependency. If no dependency, return 1;
+	// If looking for an Fp dependency, depType = 1. If looking for an integer dependency, depType  0;
+	// regID should be the register number.
+	int findDependency(int depType, int regID);
+	// If no full, return -1. If not full, return the location of the free spot.
+	int freeSpot();
 	int get_size();
 	bool empty();
 	bool full();

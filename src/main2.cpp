@@ -147,6 +147,7 @@ public:
 	Tommy->issue();
 	Tommy->issue();
 	Tommy->issue();
+	Tommy->issue();
 	Tommy->printOutTimingTable();
 	//Tommy->printRAT(false);
 	//Tommy->printRAT(true);
@@ -157,6 +158,8 @@ public:
 	Tommy->printROB();
 	Tommy->printRAT(0);
 	Tommy->printRAT(1);
+	Tommy->printARF(0);
+	Tommy->printARF(1);
 	std::cout << "After\n";
     /*
 	// ...

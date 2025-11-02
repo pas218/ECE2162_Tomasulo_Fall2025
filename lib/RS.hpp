@@ -60,6 +60,10 @@ class RS
         RS(int numLocations);
 		~RS();
 		
+		// Returns next free spot in RS.
+		// If no free spot, then returns -1.
+		int freeSpot();
+		
 		int getSize();
         // Change the value of a location. Returns 1 if successful, otherwise return 0.
 		// The value -1 indicates an emplty spot.
@@ -72,6 +76,8 @@ class RS
 		// Change the value of a dependency. Returns 1 if successful, otherwise return 0.
 		// The value -1 indicates an emplty spot.
 		bool changeROBDependency(int stationNumber, int dep0, int dep1);
+		bool changeROBDependency0(int stationNumber, int dep0);
+		bool changeROBDependency1(int stationNumber, int dep1);
 		
 		// Change the value of an operation slot. Returns 1 if successful, otherwise return 0.
 		bool changeRSVal0(int stationNumber, T val0);
