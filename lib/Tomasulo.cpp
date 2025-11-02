@@ -19,6 +19,7 @@ Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int num
 	robPointer        = 0;
 	done              = 0;
 	currentCycle      = 1;
+	PC = 0;
 	
 	for(int i = 0; i < numRow*numCol; i++)
 	{
@@ -40,174 +41,213 @@ Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int num
 // Instructions
 bool Tomasulo::issue()
 {
-	//std::cout << "IntARF pointer inside issue: " << IntARF << std::endl;
-	//std::cout << "In issue.\n";
-	//std::cout << IntARF->getValue(2) << std::endl;
-	//std::cout << std::to_string(FpARF->getValue(2)) << std::endl; 
-	//std::cout << "Now the RAT.\n";
-	//std::cout << IntRAT->getValue(2)->locationType << IntRAT->getValue(2)->locationNumber << std::endl;
+	bool success = 0;
 	
-	bool success = false;
-
-
-    // Loop over all instructions to find the first one that hasn't been issued
-    for (size_t h = 0; h < numberInstructions; ++h)
-    {
-        inst &ins = instruction[h];
-
-		// If the t_issue field is greater than 0, the instruction has already been issued
-        if (ins.t_issue > 0) continue;
-
-        int freeRS = -1;
-        int freeROB = -1;
-		int operationType = -1;
-		
-		// Check if there is a free RS for instruction (stall if not available)
-        if (ins.opcode == addi || ins.opcode == subi)
-        {
-            for (int i = 0; i < addiRS->getSize(); i++)
-			{
-                if (addiRS->getValue(i)->robLocation == -1)
-				{
-					freeRS = i;
-					operationType = 0; // Interger operation.
-					break;
-				}
-			}
-        }
-        else if (ins.opcode == addf || ins.opcode == subf)
-        {
-            for (int i = 0; i < addfRS->getSize(); i++)
-			{
-                if (addfRS->getValue(i)->robLocation == -1)
-				{
-					freeRS = i; 
-					operationType = 1; // FP operation.
-					break;
-				}
-			}
-        }
-        else if (ins.opcode == mulf)
-        {
-            for (int i = 0; i < mulfRS->getSize(); i++)
-			{
-                if (mulfRS->getValue(i)->robLocation == -1)
-				{
-					freeRS = i;
-					operationType = 1; // FP operation.
-					break;
-				}
-			}
-        }
-
-		// If there are no free RS, we must stall (success is false)
-        if (freeRS == -1)
-		{
-			return success;
-		}
-
-
-		
-		if (ROB->full() == 0)  // If full then 1. If not then 0.
-		{
-			ROB->table[robPointer].id = operationType; // set ID to indicate it's no longer free
-			freeROB = robPointer;
-			ROB->table[robPointer].dst_id = ins.rd.id;
-			ROB->table[robPointer].cmt_flag = 0;
-			// Change the RAT.
-			if (operationType == 0)
-			{
-				IntRAT->changeValue(ins.rd.id, 0, freeROB);
-			}
-			else
-			{
-				FpRAT->changeValue(ins.rd.id, 0, freeROB);
-			}
-			if (ROB->full() == 0)
-			{
-				if (robPointer + 1 < ROB->size)
-				{
-						robPointer++;
-				}
-				else{
-					robPointer = 0;
-				}
-			}
-		}
-
-		// If there are no free ROB entries, we must stall (success is false)
-        if (freeROB == -1)
-		{
-			return success;
-		}
-
-        // Fill RS using the fields for each that are defined in RS.hpp
-        if (ins.opcode == addi)
-		{
-			addiRS->changeOperation(freeRS, ADD);
-		}
-        else if (ins.opcode == subi)
-		{
-			addiRS->changeOperation(freeRS, SUB);
-		}
-        else if (ins.opcode == addf)
-		{
-			addfRS->changeOperation(freeRS, ADD);
-		}
-        else if (ins.opcode == subf)
-		{
-			addfRS->changeOperation(freeRS, SUB);
-		}
-        else if (ins.opcode == mulf)
-		{
-			mulfRS->changeOperation(freeRS, MULT);
-		}
-
-        if (ins.opcode == addi || ins.opcode == subi)
-        {
-            addiRS->changeROBLocation(freeRS, freeROB);
-            addiRS->changeRSVal0(freeRS, IntARF->getValue(ins.rs.id));
-            addiRS->changeRSVal1(freeRS, IntARF->getValue(ins.rt.id));
-            addiRS->changeROBDependency(freeRS, -1, -1); // Assume no dependency for now?
-        }
-        else if (ins.opcode == addf || ins.opcode == subf)
-        {
-			addfRS->changeROBLocation(freeRS, freeROB);
-            addfRS->changeRSVal0(freeRS, IntARF->getValue(ins.rs.id));
-            addfRS->changeRSVal1(freeRS, IntARF->getValue(ins.rt.id));
-            addfRS->changeROBDependency(freeRS, -1, -1); // Assume no dependency for now?
-        }
-        else if (ins.opcode == mulf)
-        {
-            mulfRS->changeROBLocation(freeRS, freeROB);
-            mulfRS->changeRSVal0(freeRS, IntARF->getValue(ins.rs.id));
-            mulfRS->changeRSVal1(freeRS, IntARF->getValue(ins.rt.id));
-            mulfRS->changeROBDependency(freeRS, -1, -1); // Assume no dependency for now?
-        }
-
-		// Since issue was successful, record issue cycle for timing table using gloabl counter
-		timingDiagram[h*numCol + 0].startCycle = currentCycle;
-		timingDiagram[h*numCol + 0].endCycle = currentCycle;
-		currentCycle++;
-        ins.t_issue = currentCycle;
-        success = true;
-
-		// We can only issue one instr per cycle, so go ahead and break from for loop
-        break;
-    }
-
-    return success;
-
-
+	std::cout << instruction.size() << std::endl;
 	
-	// Read operands in registers (if not available yet, record which RS will eventually produce the result)
-	// Register renaming, update RAT with source/target for new ROB entry
-
-
-
-
-	// Branch prediction will eventually happen here.
+	// Use program counter to find new instruction.
+	inst &ins = instruction[PC];
+	
+	///// SECTION 1: JUST CHECK FOR ISSUE VIABILITY
+	
+	// 0 = int add/subtract, 1 = Fp add/subtract, 2 = fp mult, 3 = Memory, 4 = Branch, -1 = NOP
+	int operationType;
+	Ops physicalOperation;
+	if (ins.opcode == add)
+	{
+		operationType = 0;
+		physicalOperation = ADD;
+	}
+	else if(ins.opcode == addi)
+	{
+		operationType = 0;
+		physicalOperation = ADD;
+	}
+	else if(ins.opcode == sub)
+	{
+		operationType = 0;
+		physicalOperation = SUB;
+	}
+	else if(ins.opcode == addf)
+	{
+		operationType = 1;
+		physicalOperation = ADD;
+	}
+	else if(ins.opcode = subf)
+	{
+		operationType = 1;
+		physicalOperation = SUB;
+	}
+	else if(ins.opcode == mulf)
+	{
+		operationType = 2;
+		physicalOperation = MULT;
+	}
+	else if (ins.opcode == load || ins.opcode == store)
+	{
+		operationType = 3;
+	}
+	else if (ins.opcode == beq || ins.opcode == bne)
+	{
+		operationType = 4;
+	}
+	else
+	{
+		operationType = 5;
+	}
+	
+	
+	int freeRSSpot;
+	// 0 = int, 1 = Fp, 2 = Memory, 3 = Branch 
+	if (operationType == 0)
+	{
+		// Integer add or subtract.
+		freeRSSpot = addiRS->freeSpot();
+	}
+	else if (operationType == 1)
+	{
+		// Floating point add or subtract.
+		freeRSSpot = addfRS->freeSpot();
+	}
+	else if (operationType == 2)
+	{
+		// Floating point multiply.
+		freeRSSpot = mulfRS->freeSpot();
+	}
+	else if (operationType == 3)
+	{
+		// Memory.
+	}
+	else if (operationType == 4)
+	{
+		// Branch.
+	}
+	else
+	{
+		// NOP.
+	}
+	
+	std::cout << freeRSSpot << std::endl;
+	// SECTION 2: ACTUALLY PERFORM ISSUE, ASSUMING THERE IS VIABILITY
+	
+	// Write the to ROB, RS, RAT, and timing table.
+	int freeROBSpot = ROB->freeSpot();
+	if (freeRSSpot != -1)
+	{
+		// ROB.
+		ROB->table[freeROBSpot].id = operationType;
+		ROB->table[freeROBSpot].dst_id = ins.rd.id;
+		
+		// RS.
+		if (operationType == 0)
+		{
+			// Integer add or subtract.
+			addiRS->changeROBLocation(freeRSSpot, freeROBSpot);
+			addiRS->changeOperation(freeRSSpot, physicalOperation);
+			
+			
+			// Change dependencies/ values 0;
+			int intDependency = 0;
+			
+			int regID0 = ins.rs.id;
+			int robDep0 = ROB->findDependency(intDependency, regID0);
+			if (robDep0 != -1)
+			{
+				addiRS->changeROBDependency0(freeRSSpot, robDep0);
+			}
+			else{
+				addiRS->changeRSVal0(freeRSSpot, IntARF->getValue(regID0));
+			}
+			
+			// Change dependencies/ values 1;
+			int regID1 = ins.rt.id;
+			int robDep1 = ROB->findDependency(intDependency, regID1);
+			if (robDep1 != -1)
+			{
+				addiRS->changeROBDependency1(freeRSSpot, robDep1);
+			}
+			else{
+				addiRS->changeRSVal1(freeRSSpot, IntARF->getValue(regID1));
+			}
+			
+			IntRAT->changeValue(ins.rd.id, 0, freeROBSpot);
+			
+		}
+		else if (operationType == 1)
+		{
+			// Floating point add or subtract.
+			addfRS->changeROBLocation(freeRSSpot, freeROBSpot);
+			addfRS->changeOperation(freeRSSpot, physicalOperation);
+			
+			// Change dependencies/ values 0;
+			int floatDependency = 1;
+			
+			int regID0 = ins.rs.id;
+			int robDep0 = ROB->findDependency(floatDependency, regID0);
+			if (robDep0 != -1)
+			{
+				addfRS->changeROBDependency0(freeRSSpot, robDep0);
+			}
+			else{
+				addfRS->changeRSVal0(freeRSSpot, FpARF->getValue(regID0));
+			}
+			
+			// Change dependencies/ values 1;
+			int regID1 = ins.rt.id;
+			int robDep1 = ROB->findDependency(floatDependency, regID1);
+			if (robDep1 != -1)
+			{
+				addfRS->changeROBDependency1(freeRSSpot, robDep1);
+			}
+			else{
+				addfRS->changeRSVal1(freeRSSpot, FpARF->getValue(regID1));
+			}
+			
+			FpRAT->changeValue(ins.rd.id, 0, freeROBSpot);
+			
+		}
+		else if (operationType == 2)
+		{
+			// Floating point multiply.
+			mulfRS->changeROBLocation(freeRSSpot, freeROBSpot);
+			mulfRS->changeOperation(freeRSSpot, physicalOperation);
+			
+			// Change dependencies/ values 0;
+			int floatDependency = 1;
+			
+			int regID0 = ins.rs.id;
+			int robDep0 = ROB->findDependency(floatDependency, regID0);
+			if (robDep0 != -1)
+			{
+				mulfRS->changeROBDependency0(freeRSSpot, robDep0);
+			}
+			else{
+				mulfRS->changeRSVal0(freeRSSpot, FpARF->getValue(regID0));
+			}
+			
+			// Change dependencies/ values 1;
+			int regID1 = ins.rt.id;
+			int robDep1 = ROB->findDependency(floatDependency, regID1);
+			if (robDep1 != -1)
+			{
+				mulfRS->changeROBDependency1(freeRSSpot, robDep1);
+			}
+			else{
+				mulfRS->changeRSVal1(freeRSSpot, FpARF->getValue(regID1));
+			}
+			
+			FpRAT->changeValue(ins.rd.id, 0, freeROBSpot);
+			
+		}
+		
+		timingDiagram[PC*numCol + 0].startCycle = currentCycle;
+		timingDiagram[PC*numCol + 0].endCycle   = currentCycle;
+	}
+	
+	
 	std::cout << "end\n";
+	PC++;
+	currentCycle++;
 	return success;
 }
 
@@ -223,12 +263,25 @@ bool Tomasulo::execute()
 	// When an FU's execution completes, mark the RS entry as 'finished' so that it can be written on the next writeback cycle
 	// For load/store, also calculate effective address (does not occupy integer ALU to do this).
 	// Eventually, branch resolution will happen here
+	// Loop over all instructions to find the first one that hasn't been issued
+	/*
+    for (size_t h = 0; h < numberInstructions; ++h) 
+	{  
+		// Find instruction that has been issued, but not executed.
+		if (!((timingDiagram[h*numCol + 0].startCycle != 0) && (timingDiagram[h*numCol + 1].startCycle == 0)))
+		{
+			continue;
+		}
+		
+		inst &ins = instruction[h];
+		if (
+		break;
+	}
 
 
 
 
-
-
+*/
 	return success;
 }
 

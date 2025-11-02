@@ -75,6 +75,21 @@ RS<T, Op>::~RS(){
 }
 
 template <typename T, typename Op>
+int RS<T, Op>::freeSpot()
+{
+	int returnVal = -1;
+	for (int i = 0; i < numStations; i++)
+	{
+		if (stationsPtr[i].robLocation == -1)
+		{
+			returnVal = i;
+			break;
+		}
+	}
+	return returnVal;
+}
+
+template <typename T, typename Op>
 int RS<T, Op>::getSize()
 {
 	return numStations;
@@ -115,6 +130,28 @@ bool RS<T, Op>::changeROBDependency(int stationNumber, int dep0, int dep1)
 	return returnVal;
 }
 
+template <typename T, typename Op>
+bool RS<T, Op>::changeROBDependency0(int stationNumber, int dep0)
+{
+	bool returnVal = checkBounds(stationNumber);
+	if (returnVal)
+	{
+		stationsPtr[stationNumber].robDependency0 = dep0;
+	}
+	return returnVal;
+}
+
+template <typename T, typename Op>
+bool RS<T, Op>::changeROBDependency1(int stationNumber, int dep1)
+{
+	bool returnVal = checkBounds(stationNumber);
+	if (returnVal)
+	{
+		stationsPtr[stationNumber].robDependency1 = dep1;
+	}
+	return returnVal;
+}
+		
 template <typename T, typename Op>
 bool RS<T, Op>::changeRSVal0(int stationNumber, T val0)
 {

@@ -417,19 +417,39 @@ void InputParser::parse(const std::string &filename)
         //for (size_t i = 1; i < words.size(); ++i)
         //    std::cout << words[i] << " ";
         //std::cout << std::endl;
-
+		
+		/*
+			add = 0,
+	addi,
+	sub,
+	addf,
+	subf,
+	mulf,
+	load,
+	store,
+	beq,
+	bne,
+	nop
+		*/
 
         // Decode instruction and store all of the values that were read into the appropriate fields
         if (op == "Add")
         {
-            itmp.opcode = addi;
+            itmp.opcode = add;
             itmp.rd.id = stoi(words[1] + 1);
             itmp.rs.id = stoi(words[2] + 1);
             itmp.rt.id = stoi(words[3] + 1);
         }
+		else if (op == "Addi")
+		{
+			itmp.opcode = addi;
+            itmp.rd.id = stoi(words[1] + 1);
+            itmp.rs.id = stoi(words[2] + 1);
+            itmp.immediate = stoi(words[3] + 1);
+		}
         else if (op == "Sub")
         {
-            itmp.opcode = subi;
+            itmp.opcode = sub;
             itmp.rd.id = stoi(words[1] + 1);
             itmp.rs.id = stoi(words[2] + 1);
             itmp.rt.id = stoi(words[3] + 1);
@@ -559,10 +579,13 @@ void InputParser::parse(const std::string &filename)
 
             switch (it.opcode)
             {
-                case addi:
-                    std::cout << "Add R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
+				case add:
+					std::cout << "Add R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
                     break;
-                case subi:
+                case addi:
+                    std::cout << "Add R immediate" << it.rd.id << ", R" << it.rs.id << ", " << it.immediate;
+                    break;
+                case sub:
                     std::cout << "Sub R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
                     break;
                 case addf:

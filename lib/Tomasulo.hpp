@@ -15,6 +15,11 @@
 struct timing_type{
 	int startCycle;    
 	int endCycle;
+	int numROB;
+	bool isInt;
+	bool isFp;
+	bool isMem;
+	bool isBranch;
 };
 
 class Tomasulo
@@ -38,6 +43,7 @@ class Tomasulo
 		const int numExFPMult;
 		const int numExLoadStore;
 		const int numMemLoadStore;
+		int PC;
 		int robPointer;
 		ARF<int> *IntARF;
 		ARF<float> *FpARF;
