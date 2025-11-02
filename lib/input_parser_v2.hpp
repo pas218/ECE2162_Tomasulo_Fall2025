@@ -28,15 +28,17 @@ typedef std::pair <int,float> mem_unit;
 //  7-8 branch
 enum Operation
 {
-	addi = 0,
-	subi,
+	add = 0,
+	addi,
+	sub,
 	addf,
 	subf,
 	mulf,
 	load,
 	store,
 	beq,
-	bne
+	bne,
+	nop
 };
 
 class item
@@ -58,6 +60,7 @@ public:
 	item rt;
 	std::string name;
 	std::string sd_offset;
+	int immediate;
 	int t_issue;
 	int t_ex;
 	int t_mem;
