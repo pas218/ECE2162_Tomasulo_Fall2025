@@ -17,9 +17,11 @@ struct timing_type{
 	int endCycle;
 	int numROB;
 	bool isInt;
-	bool isFp;
+	bool fpAdd;
+	bool fpMult;
 	bool isMem;
 	bool isBranch;
+	bool stepThisCycle;
 };
 
 class Tomasulo
@@ -43,6 +45,7 @@ class Tomasulo
 		const int numExFPMult;
 		const int numExLoadStore;
 		const int numMemLoadStore;
+		const int numCDB;
 		int PC;
 		int robPointer;
 		ARF<int> *IntARF;
@@ -59,7 +62,7 @@ class Tomasulo
 
     public:
 		
-		Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore,
+		Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore, int numCDB,
 			ARF<int> *IntARF, ARF<float> *FpARF, RS<int, Ops> *addiRS, RS<float, Ops> *addfRS, RS<float, Ops> *mulfRS, RAT<int> *IntRAT, 
 				RAT<float> *FpRAT, ReOrderBuf *ROB, std::vector<inst> &instruction);
 		bool issue();
@@ -67,6 +70,7 @@ class Tomasulo
 		bool mem();
 		bool wb();
 		bool commit();
+		void clearSteps();
 		timing_type getValue(int numInstr, int numCycle);
 		void printARF(bool select); // 0 for integer, 1 for float.
 		void printRAT(bool select); // 0 for iteger, 1 for float.

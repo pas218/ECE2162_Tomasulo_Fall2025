@@ -1,11 +1,11 @@
 #include "Tomasulo.hpp"
 
 
-Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore,
+Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore, int numCDB,
 			ARF<int> *IntARF, ARF<float> *FpARF, RS<int, Ops> *addiRS, RS<float, Ops> *addfRS, RS<float, Ops> *mulfRS, RAT<int> *IntRAT, 
 				RAT<float> *FpRAT, ReOrderBuf *ROB, std::vector<inst> &instruction)
 	: numRow(numberInstructions) , numberInstructions(numberInstructions), numExInt(numExInt), numExFPAdd(numExFPAdd), numExFPMult(numExFPMult),
-		numExLoadStore(numExLoadStore), numMemLoadStore(numMemLoadStore)
+		numExLoadStore(numExLoadStore), numMemLoadStore(numMemLoadStore), numCDB(numCDB)
 {
 	this->IntARF      = IntARF;
 	this->FpARF       = FpARF;
@@ -43,13 +43,19 @@ bool Tomasulo::issue()
 {
 	bool success = 0;
 	
-	std::cout << instruction.size() << std::endl;
+	
+	if (PC >= numberInstructions)
+	{
+		return success;
+	}
 	
 	// Use program counter to find new instruction.
 	inst &ins = instruction[PC];
 	
 	///// SECTION 1: JUST CHECK FOR ISSUE VIABILITY
 	
+	std::cout << "PC: " << PC << std::endl;
+	std::cout << "Opcode: " << ins.opcode << std::endl;
 	// 0 = int add/subtract, 1 = Fp add/subtract, 2 = fp mult, 3 = Memory, 4 = Branch, -1 = NOP
 	int operationType;
 	Ops physicalOperation;
@@ -73,7 +79,7 @@ bool Tomasulo::issue()
 		operationType = 1;
 		physicalOperation = ADD;
 	}
-	else if(ins.opcode = subf)
+	else if(ins.opcode == subf)
 	{
 		operationType = 1;
 		physicalOperation = SUB;
@@ -97,6 +103,7 @@ bool Tomasulo::issue()
 	}
 	
 	
+	std::cout << "Operation type: " << operationType << std::endl;
 	int freeRSSpot;
 	// 0 = int, 1 = Fp, 2 = Memory, 3 = Branch 
 	if (operationType == 0)
@@ -127,7 +134,6 @@ bool Tomasulo::issue()
 		// NOP.
 	}
 	
-	std::cout << freeRSSpot << std::endl;
 	// SECTION 2: ACTUALLY PERFORM ISSUE, ASSUMING THERE IS VIABILITY
 	
 	// Write the to ROB, RS, RAT, and timing table.
@@ -240,14 +246,36 @@ bool Tomasulo::issue()
 			
 		}
 		
-		timingDiagram[PC*numCol + 0].startCycle = currentCycle;
-		timingDiagram[PC*numCol + 0].endCycle   = currentCycle;
+		timingDiagram[PC*numCol + 0].startCycle         = currentCycle;
+		timingDiagram[PC*numCol + 0].endCycle           = currentCycle;
+		timingDiagram[PC*numCol + 0].numROB   	        = freeROBSpot;
+		timingDiagram[PC*numCol + 0].stepThisCycle   	= true;
+		// Change the flag type in the timing diagram depending on operation type.
+		
+		
+		if (operationType == 0)
+		{
+			timingDiagram[PC*numCol + 0].isInt = true;
+			
+			std::cout << "Inside isInt\n";
+		}
+		else if (operationType == 1)
+		{
+			timingDiagram[PC*numCol + 0].fpAdd = true;
+			
+			std::cout << "Inside fpAdd\n";
+		}
+		else if(operationType == 2)
+		{
+			timingDiagram[PC*numCol + 0].fpMult = true;
+			
+			std::cout << "Inside fpMult\n";
+		}
+		
+		success = true;
 	}
 	
-	
-	std::cout << "end\n";
 	PC++;
-	currentCycle++;
 	return success;
 }
 
@@ -256,32 +284,77 @@ bool Tomasulo::issue()
 bool Tomasulo::execute()
 {
 	bool success = 0;
-	
-	// Execute instructions once all operands are ready (record execute cycle for table)
-	// "Compete" to use functional unit (oldest first)
-	// Advance instruction count for each instruction in execution. Wait for the number of cycles read from the input before marking the instruction as ready (cycle_addi, cycle_addf, etc.)
-	// When an FU's execution completes, mark the RS entry as 'finished' so that it can be written on the next writeback cycle
-	// For load/store, also calculate effective address (does not occupy integer ALU to do this).
-	// Eventually, branch resolution will happen here
-	// Loop over all instructions to find the first one that hasn't been issued
-	/*
+	// Find next instruction that has been issued but not executed.
+	// This loop is to START execution.
     for (size_t h = 0; h < numberInstructions; ++h) 
 	{  
 		// Find instruction that has been issued, but not executed.
-		if (!((timingDiagram[h*numCol + 0].startCycle != 0) && (timingDiagram[h*numCol + 1].startCycle == 0)))
+		if (!((timingDiagram[h*numCol + 0].endCycle != 0) && (timingDiagram[h*numCol + 1].startCycle == 0)
+				&& (timingDiagram[h*numCol + 0].stepThisCycle == false)))
 		{
 			continue;
 		}
 		
+		// Write down the start cycle for executel
+		timingDiagram[h*numCol + 1].startCycle = currentCycle;
+		
+		break; // Only do this once.
+		
+		success = true;
+	}
+	
+	// Find next instruction that has started executing, but not finished.
+	// This loop is to END execution.
+    for (size_t h = 0; h < numberInstructions; ++h) 
+	{  
+		// Find instruction that has been issued, but not executed.
+		if (!((timingDiagram[h*numCol + 1].startCycle != 0) && (timingDiagram[h*numCol + 1].endCycle == 0)))
+		{
+			continue;
+		}
+		
+		
+		// Get the ROB spot.
+		int robSpot = timingDiagram[h*numCol + 0].numROB;
+		// Check the instruction type
 		inst &ins = instruction[h];
-		if (
-		break;
+		if (timingDiagram[h*numCol + 0].isInt == true)
+		{
+			// Integer type.
+			// See if finished executing.
+			if (currentCycle - timingDiagram[h*numCol + 1].startCycle + 1 >= numExInt)
+			{
+				timingDiagram[h*numCol + 1].endCycle = currentCycle;
+				timingDiagram[h*numCol + 0].stepThisCycle = true;
+			}
+			
+		}
+		else if (timingDiagram[h*numCol + 0].fpAdd == true)
+		{
+			// Fp type add.
+			
+			// See if finished executing.
+			if (currentCycle - timingDiagram[h*numCol + 1].startCycle + 1 >= numExFPAdd)
+			{
+				timingDiagram[h*numCol + 1].endCycle = currentCycle;
+				timingDiagram[h*numCol + 0].stepThisCycle = true;
+			}
+			
+		}
+		else if (timingDiagram[h*numCol + 0].fpMult == true)
+		{
+			// Fp type mult.
+			
+			if (currentCycle - timingDiagram[h*numCol + 1].startCycle + 1 >= numExFPMult)
+			{
+				timingDiagram[h*numCol + 1].endCycle = currentCycle;
+				timingDiagram[h*numCol + 0].stepThisCycle = true;
+			}
+		}
+		
+		success = true;
 	}
 
-
-
-
-*/
 	return success;
 }
 
@@ -306,13 +379,79 @@ bool Tomasulo::wb()
 {
 	bool success = 0;
 	
-
 	// Broadcast results onto the CDB (other instructions waiting on it will need to pick it up), or buffer if the CDB is full
 	// Write result back to RS and ROB entry (record WB cycle for table)
 	// Mark the ready/finished bit in ROB since the instruction has completed execution
 	// Free reservation stations for future reuse when finished
 	// Store instructions write to memory in this stage
-        
+	
+	std::cout << "Starting wb().\n";
+	std::cout << "Number CDB: " << numCDB << std::endl;
+	// Assume CDB is size 1.
+	if (numCDB == 1)
+	{
+		std::cout << "Inside numCBD if statement.\n";
+		// Find instruction that has completed execution cycle and (if load/store) memory as well.
+		for (size_t h = 0; h < numberInstructions; ++h) 
+		{
+			std::cout << "wb loop " << h << std::endl;
+			// Find instruction that has been issued, but not executed.
+			if (!((timingDiagram[h*numCol + 1].endCycle != 0) && (timingDiagram[h*numCol + 3].startCycle == 0) 
+				&& (timingDiagram[h*numCol + 0].stepThisCycle == false)))
+			{
+				continue;
+			}
+			/*
+			else if (!((timingDiagram[h*numCol + 2].endCycle != 0) && (timingDiagram[h*numCol + 3].startCycle == 1) 
+				&& (timingDiagram[h*numCol + 0].isMem)))
+			{
+				// Memory case;
+				continue;
+			}
+			*/
+			
+			std::cout << "In wb.\n";
+			int ROBSpot = timingDiagram[h*numCol + 0].numROB;
+			
+			int RSSpot;
+			if (timingDiagram[h*numCol + 0].isInt == true)
+			{
+				RSSpot = addiRS->findRSFromROB(ROBSpot);
+				if (RSSpot != -1)
+				{
+					addiRS->compute(RSSpot);
+					ROB->table[ROBSpot].value = static_cast<float>(addiRS->getValue(RSSpot)->computation);
+				}
+			}
+			else if (timingDiagram[h*numCol + 0].fpAdd == true)
+			{
+				RSSpot = addfRS->findRSFromROB(ROBSpot);
+				if (RSSpot != -1)
+				{
+					addfRS->compute(RSSpot);
+					ROB->table[ROBSpot].value = static_cast<float>(addfRS->getValue(RSSpot)->computation);
+				}
+			}
+			else if (timingDiagram[h*numCol + 0].fpMult == true)
+			{
+				RSSpot = mulfRS->findRSFromROB(ROBSpot);
+				if (RSSpot != -1)
+				{
+					mulfRS->compute(RSSpot);
+					ROB->table[ROBSpot].value = static_cast<float>(mulfRS->getValue(RSSpot)->computation);
+				}
+			}
+			
+			
+			addiRS->replaceROBDependency(ROBSpot, static_cast<int>(ROB->table[ROBSpot].value));
+			addfRS->replaceROBDependency(ROBSpot, static_cast<float>(ROB->table[ROBSpot].value));
+			mulfRS->replaceROBDependency(ROBSpot, static_cast<float>(ROB->table[ROBSpot].value));
+		
+			timingDiagram[h*numCol + 3].startCycle = currentCycle; timingDiagram[h*numCol + 3].endCycle = currentCycle;
+			success = true;
+			break;
+		}
+	}
 
 
 
@@ -338,6 +477,13 @@ bool Tomasulo::commit()
 	return success;
 }
 
+void Tomasulo::clearSteps()
+{
+	for (int i = 0; i < numberInstructions; i++)
+	{
+		timingDiagram[i*numCol + 0].stepThisCycle = false;
+	}
+}
 timing_type Tomasulo::getValue(int numInstr, int numCycle)
 {
 	return timingDiagram[numInstr*numCol + numCycle];
@@ -436,7 +582,7 @@ void Tomasulo::printRS(int select) // 0 = addiRS, 1 = addfRS, mulfRS = 2
 		{
 			std::cout << i << ": " << "Operation: " << addiRS->getValue(i)->operation << ", Rob Location: " << addiRS->getValue(i)->robLocation
 				<< ", Rob Dependency 0: " << addiRS->getValue(i)->robDependency0 << ", Rob Dependency 1: " << addiRS->getValue(i)->robDependency1
-					<< ", Value 0: " << addiRS->getValue(i)->value0 << ", Value 1: " << addiRS->getValue(i)->value1 << std::endl;
+					<< ", Value 0: " << addiRS->getValue(i)->value0 << ", Value 1: " << addiRS->getValue(i)->value1 << ", Computation: " << addiRS->getValue(i)->computation << std::endl;
 		}
 	}
 	else if(select == 1)
@@ -446,7 +592,8 @@ void Tomasulo::printRS(int select) // 0 = addiRS, 1 = addfRS, mulfRS = 2
 		{
 			std::cout << i << ": " << "Operation: " << addfRS->getValue(i)->operation << ", Rob Location: " << addfRS->getValue(i)->robLocation
 				<< ", Rob Dependency 0: " << addfRS->getValue(i)->robDependency0 << ", Rob Dependency 1: " << addfRS->getValue(i)->robDependency1
-					<< ", Value 0: " << std::to_string(addfRS->getValue(i)->value0) << ", Value 1: " << std::to_string(addfRS->getValue(i)->value1) << std::endl;
+					<< ", Value 0: " << std::to_string(addfRS->getValue(i)->value0) << ", Value 1: " << std::to_string(addfRS->getValue(i)->value1) 
+						<< ", Computation: " << std::to_string(addfRS->getValue(i)->computation)<< std::endl;
 		}
 	}
 	else if(select == 2)
@@ -456,7 +603,8 @@ void Tomasulo::printRS(int select) // 0 = addiRS, 1 = addfRS, mulfRS = 2
 		{
 			std::cout << i << ": " << "Operation: " << mulfRS->getValue(i)->operation << ", Rob Location: " << mulfRS->getValue(i)->robLocation
 				<< ", Rob Dependency 0: " << mulfRS->getValue(i)->robDependency0 << ", Rob Dependency 1: " << mulfRS->getValue(i)->robDependency1
-					<< ", Value 0: " << std::to_string(mulfRS->getValue(i)->value0) << ", Value 1: " << std::to_string(mulfRS->getValue(i)->value1) << std::endl;
+					<< ", Value 0: " << std::to_string(mulfRS->getValue(i)->value0) << ", Value 1: " << std::to_string(mulfRS->getValue(i)->value1) 
+						<< ", Computation: " << std::to_string(mulfRS->getValue(i)->computation) << std::endl;
 		}
 	}
 	else
@@ -481,30 +629,11 @@ void Tomasulo::printOutTimingTable()
 		
 bool Tomasulo::fullAlgorithm()
 {
-	bool keepGoing  = 0;
-	while (!done)
-	{
-		keepGoing = issue();
-		if (keepGoing)
-		{
-				keepGoing = execute();
-		}
-		if (keepGoing)
-		{
-				keepGoing = execute();
-		}
-		if (keepGoing)
-		{
-				keepGoing = mem();
-		}
-		if (keepGoing)
-		{
-				keepGoing = wb();
-		}
-		if (keepGoing)
-		{
-				keepGoing = commit();
-		}
-	}
-	return done;
+	clearSteps();
+	issue();
+	execute();
+	wb();
+	commit();
+	currentCycle++;
+	return 1;
 }

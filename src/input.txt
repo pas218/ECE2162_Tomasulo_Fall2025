@@ -11,5 +11,5 @@ Mem[4]=1, Mem[8]=2, Mem[12]=3.4
 
 Add   R4, R1, R2
 Add.d F1, F2, F3
-Add.d F4, F5, F6
+Mult.d F4, F5, F6
 Sub   R1, R4, R2

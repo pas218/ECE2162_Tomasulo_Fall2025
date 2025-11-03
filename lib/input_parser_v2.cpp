@@ -468,7 +468,7 @@ void InputParser::parse(const std::string &filename)
             itmp.rs.id = stoi(words[2] + 1);
             itmp.rt.id = stoi(words[3] + 1);
         }
-        else if (op == "Mul.d")
+        else if (op == "Mult.d")
         {
             itmp.opcode = mulf;
             itmp.rd.id = stoi(words[1] + 1);
@@ -595,7 +595,7 @@ void InputParser::parse(const std::string &filename)
                     std::cout << "Sub.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
                     break;
                 case mulf:
-                    std::cout << "Mul.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
+                    std::cout << "Mult.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
                     break;
                 case load:
                     std::cout << "Ld F" << it.rd.id << ", " << it.rt.value << "(R" << it.rs.id << ")";
@@ -658,7 +658,7 @@ void InputParser::output()
                     std::cout << "Sub.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
                     break;
                 case mulf:
-                    std::cout << "Mul.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
+                    std::cout << "Mult.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
                     break;
                 case load:
                     std::cout << "Ld F" << it.rd.id << ", " << it.rt.value << "(R" << it.rs.id << ")\t";
