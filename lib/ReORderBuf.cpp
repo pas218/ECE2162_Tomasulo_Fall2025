@@ -11,7 +11,7 @@ ReOrderBuf::ReOrderBuf(int n)
 	for (int i = 0; i < size; i++)
 	{
 		table[i].id       = -1;
-		table[i].dst_id   = 0;
+		table[i].dst_id   = -1;
 		table[i].value    = 0.0;
 		table[i].cmt_flag = 0;
 	}
@@ -37,6 +37,35 @@ int ReOrderBuf::findDependency(int depType, int regID)
 	return returnVal;
 }
 
+bool ReOrderBuf::ableToCommit(int spotNumber)
+{
+	// First make sure that the commit flag is set.
+	bool returnVal = table[spotNumber].cmt_flag == 1 ? true : false;
+
+	// Make sure there are no entries before the one we want to commit.
+	for (int i = spotNumber-1; i >= 0; i--)
+	{	
+		if (table[i].id != -1)
+		{
+			returnVal = false;
+			break;
+		}
+	}
+	return returnVal;
+}
+commitReturn ReOrderBuf::commit(int spotNumber)
+{
+	commitReturn returnVal;
+
+	returnVal.validCommit = true;
+	returnVal.regType = table[spotNumber].id;
+	returnVal.registerNum = table[spotNumber].dst_id;
+	returnVal.returnValue = table[spotNumber].value;
+	clearSpot(spotNumber);
+
+	return returnVal;
+}
+
 int ReOrderBuf::freeSpot()
 {
 	int returnVal = -1;
@@ -49,4 +78,12 @@ int ReOrderBuf::freeSpot()
 		}
 	}
 	return returnVal;
+}
+
+void ReOrderBuf::clearSpot(int spotNumber)
+{
+	table[spotNumber].id       = -1;
+	table[spotNumber].dst_id   = -1;
+	table[spotNumber].value    = 0.0;
+	table[spotNumber].cmt_flag = 0;
 }

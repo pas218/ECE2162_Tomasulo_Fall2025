@@ -44,6 +44,7 @@ std::vector<inst> instruction;
 int main()
 {
 	
+	
 	ARF<int> *IntARF;
 	ARF<float> *FpARF;
 	RAT<int> *IntRAT;
@@ -53,6 +54,9 @@ int main()
 	RS<float, Ops> *mulfRS;
 	ReOrderBuf *ROB;
 	
+
+	
+
     std::cout << "Begin main.cpp" << std::endl;
 	
 	int numARF = 32;
@@ -62,6 +66,17 @@ int main()
     // Parse the input.txt file and print the input configuration that has been read
     parser.parse("src\\input.txt");
 	
+	/*
+	// Try not dynamically allocationg
+	ARF<int> IntARF(parser.intARFValues);
+	ARF<float> FpARF(parser.floatARFValues);
+	RAT<int> IntRAT(numARF);
+	RAT<float> FpRAT(numARF);
+	RS<int, Ops> addiRS(parser.num_addiRS);
+	RS<float, Ops> addfRS(parser.num_addfRS);
+	RS<float, Ops> mulfRS(parser.num_mulfRS);
+	ReOrderBuf ROB(parser.num_ROB);
+	*/
 	
 	IntARF = new ARF<int>(parser.intARFValues);
     FpARF  = new ARF<float>(parser.floatARFValues);
@@ -74,33 +89,6 @@ int main()
 	
 	ROB    = new ReOrderBuf(parser.num_ROB);
 	
-	/*
-	class inst
-{
-public:
-	Operation opcode;
-	item rd;
-	item rs;
-	item rt;
-	std::string name;
-	std::string sd_offset;
-	int t_issue;
-	int t_ex;
-	int t_mem;
-	int t_wb;
-	int t_commit;
-	bool cmt;
-	inst():t_issue(0),t_ex(0),t_mem(0),t_wb(0),t_commit(0),cmt(0){}
-	void reset(){
-		t_issue=0;
-		t_ex=0;
-		t_mem=0;
-		t_wb=0;
-		t_commit=0;
-		cmt=false;
-	}
-};
-*/
 /*
 	// Test out the instructions.
 	std::cout << "Instruction testing.\n";
@@ -115,7 +103,7 @@ public:
     CDB<int> intCDB(parser.num_CDB_buf);
     CDB<float> floatCDB(parser.num_CDB_buf);
 
-
+/*
 	// Example: push a value to the CDB
     std::cout << "Pushing value 42 to integer CDB..." << std::endl;
     bool success = intCDB.push(1, 5, 42);  // robID=1, destReg=5, value=42
@@ -134,7 +122,7 @@ public:
     {
         std::cout << "CDB is empty, nothing to pop." << std::endl;
     }
-
+*/
 
 
 
@@ -144,10 +132,11 @@ public:
 	Tomasulo *Tommy;
 	Tommy = new Tomasulo(parser.instruction.size(), parser.cycle_addi, parser.cycle_addf, parser.cycle_mulf, 
 		parser.cycle_mem_exe, parser.cycle_mem_mem, parser.num_CDB_buf, IntARF, FpARF, addiRS, addfRS, mulfRS, IntRAT, FpRAT, ROB, parser.instruction);
-	for (int i = 0; i < 7; i++)
+	for (int i = 0; i < 25; i++)
 	{
 		Tommy->fullAlgorithm();
 	}
+	std::cout << "Bruh can we get a table print?\n";
 	Tommy->printOutTimingTable();
 	//Tommy->printRAT(false);
 	//Tommy->printRAT(true);
@@ -201,6 +190,7 @@ public:
 	*/
 
 	// Delete dynamically allocated poiters;
+	
 	delete IntARF;
     delete FpARF;
 	delete IntRAT;

@@ -11,6 +11,14 @@ struct InstBuf
     InstBuf(): free(1), inst() {}
 };
 
+struct commitReturn
+{
+	bool validCommit;
+	int regType;
+	int registerNum;
+	float returnValue;
+};
+
 class ReOrderBuf_entry
 {
 public:
@@ -35,11 +43,15 @@ public:
 	// If looking for an Fp dependency, depType = 1. If looking for an integer dependency, depType  0;
 	// regID should be the register number.
 	int findDependency(int depType, int regID);
+	bool ableToCommit(int spotNumber);
+	commitReturn commit(int spotNumber);
+
 	// If no full, return -1. If not full, return the location of the free spot.
 	int freeSpot();
 	int get_size();
 	bool empty();
 	bool full();
+	void clearSpot(int spotNumber);
 	
 	ReOrderBuf(int n);
 	~ReOrderBuf(){delete[]table;}
