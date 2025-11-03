@@ -57,17 +57,6 @@ bool ARF<T>::changeValue(int registerNumber, T value)
 	return returnVal;
 }
 
-template <typename T>
-bool ARF<T>::replaceValues(std::vector<int> registers, T value)
-{
-	bool returnVal = false;
-	for(int i = 0; i < registers.size(); i ++)
-	{
-		changeValue(registers[i], value);
-		returnVal = true;
-	}
-	return returnVal;
-}
 
 template <typename T>
 T ARF<T>::getValue(int registerNumber)
