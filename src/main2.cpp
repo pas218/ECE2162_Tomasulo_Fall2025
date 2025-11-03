@@ -143,11 +143,11 @@ public:
 	std::cout << "Begin Tomasulo algorithm" << std::endl;
 	Tomasulo *Tommy;
 	Tommy = new Tomasulo(parser.instruction.size(), parser.cycle_addi, parser.cycle_addf, parser.cycle_mulf, 
-		parser.cycle_mem_exe, parser.cycle_mem_mem, IntARF, FpARF, addiRS, addfRS, mulfRS, IntRAT, FpRAT, ROB, parser.instruction);
-	Tommy->issue();
-	Tommy->issue();
-	Tommy->issue();
-	Tommy->issue();
+		parser.cycle_mem_exe, parser.cycle_mem_mem, parser.num_CDB_buf, IntARF, FpARF, addiRS, addfRS, mulfRS, IntRAT, FpRAT, ROB, parser.instruction);
+	for (int i = 0; i < 7; i++)
+	{
+		Tommy->fullAlgorithm();
+	}
 	Tommy->printOutTimingTable();
 	//Tommy->printRAT(false);
 	//Tommy->printRAT(true);
@@ -155,6 +155,7 @@ public:
 	//Tommy->printARF(true);
 	Tommy->printRS(0);
 	Tommy->printRS(1);
+	Tommy->printRS(2);
 	Tommy->printROB();
 	Tommy->printRAT(0);
 	Tommy->printRAT(1);

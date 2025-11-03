@@ -40,6 +40,8 @@ struct RS_type{
 	int robDependency1;
 	T value0;
 	T value1;
+	T computation;
+	bool computationDone;
 };
 
 
@@ -59,6 +61,12 @@ class RS
 		RS();
         RS(int numLocations);
 		~RS();
+		
+		bool replaceROBDependency(int robLocation, T value);
+		
+		// If not rob spot is used here, return -1.
+		// Otherwise, return the location in the RS that correspondes with the input ROB location.
+		int findRSFromROB(int robLocation);
 		
 		// Returns next free spot in RS.
 		// If no free spot, then returns -1.
@@ -82,7 +90,7 @@ class RS
 		// Change the value of an operation slot. Returns 1 if successful, otherwise return 0.
 		bool changeRSVal0(int stationNumber, T val0);
 		bool changeRSVal1(int stationNumber, T val1);
-		
+		bool compute(int stationNumber);
 		// Clears the location of an RS station.
 		// The location and dependencies entries will be changes to -1, and the values to 0 (either integer or FP).
 		bool clearLocation(int stationNumber);
