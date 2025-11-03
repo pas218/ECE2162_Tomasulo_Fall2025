@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 
 template <typename T>
 RAT<T>::RAT()
@@ -45,6 +46,21 @@ RAT<T>::~RAT()
 	delete[] locationsPtr;
 }
 
+template <typename T>
+std::vector<int> RAT<T>::getARFLocations(int robLocation)
+{
+	std::vector<int> returnVal;
+	for (int i = 0; i < numLocations; i++)
+	{
+		if ((locationsPtr[i].locationType == 'B') && (locationsPtr[i].locationNumber == robLocation))
+		{
+			returnVal.push_back(i);
+			resetLocation(i);
+		}
+	}
+	return returnVal;
+}
+
 template<typename T>
 int RAT<T>::getSize()
 {
@@ -78,6 +94,21 @@ bool  RAT<T>::changeValue(int locationNumber, bool isARF, int robNumber)
 	}
 	
 	return returnVal;
+}
+
+template <typename T>
+bool RAT<T>::resetLocation(int locationNumber)
+{
+	if (std::is_same<T, int>::value)
+	{
+		locationsPtr[locationNumber].locationType = 'R';
+	}
+	else
+	{
+		locationsPtr[locationNumber].locationType = 'F';
+	}
+	locationsPtr[locationNumber].locationNumber = locationNumber;
+	return true;
 }
 
 template <typename T>

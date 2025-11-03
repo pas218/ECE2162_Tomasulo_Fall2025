@@ -91,6 +91,7 @@ class RS
 		bool changeRSVal0(int stationNumber, T val0);
 		bool changeRSVal1(int stationNumber, T val1);
 		bool compute(int stationNumber);
+		
 		// Clears the location of an RS station.
 		// The location and dependencies entries will be changes to -1, and the values to 0 (either integer or FP).
 		bool clearLocation(int stationNumber);
