@@ -109,8 +109,21 @@ bool RS<T, Op>::replaceROBDependency(int robLocation, T value)
 		if (getValue(i)->robDependency1 == robLocation)
 		{
 			returnVal = true;
-			changeRSVal0(i, value);
+			changeRSVal1(i, value);
 		}
+	}
+	return returnVal;
+}
+
+template <typename T, typename Op>
+bool RS<T, Op>::hasUnaddressedDependencies(int robLocation)
+{
+	bool returnVal = false;
+	int RSSpot = findRSFromROB(robLocation);
+	if ((stationsPtr[RSSpot].robDependency0 != -1) 
+		|| (stationsPtr[RSSpot].robDependency1 != -1))
+	{
+		returnVal = true;
 	}
 	return returnVal;
 }
@@ -230,22 +243,22 @@ bool RS<T, Op>::compute(int stationNumber)
 				break;
 			case ADD:
 				stationsPtr[stationNumber].computation =
-					stationsPtr[stationNumber].value0 + stationsPtr[stationNumber].value1;
+					static_cast<T>(stationsPtr[stationNumber].value0) + static_cast<T>(stationsPtr[stationNumber].value1);
 				stationsPtr[stationNumber].computationDone = true;
 				break;
 			case SUB:
 				stationsPtr[stationNumber].computation =
-					stationsPtr[stationNumber].value0 - stationsPtr[stationNumber].value1;
+					static_cast<T>(stationsPtr[stationNumber].value0) - static_cast<T>(stationsPtr[stationNumber].value1);
 				stationsPtr[stationNumber].computationDone = true;
 				break;
 			case MULT:
 				stationsPtr[stationNumber].computation =
-					stationsPtr[stationNumber].value0 * stationsPtr[stationNumber].value1;
+					static_cast<T>(stationsPtr[stationNumber].value0) * static_cast<T>(stationsPtr[stationNumber].value1);
 				stationsPtr[stationNumber].computationDone = true;
 				break;
 			case DIV:
 				stationsPtr[stationNumber].computation =
-					stationsPtr[stationNumber].value0 / stationsPtr[stationNumber].value1;
+					static_cast<T>(stationsPtr[stationNumber].value0) / static_cast<T>(stationsPtr[stationNumber].value1);
 				stationsPtr[stationNumber].computationDone = true;
 				break;
 			default:

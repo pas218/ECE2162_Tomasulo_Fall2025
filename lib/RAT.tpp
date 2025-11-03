@@ -47,15 +47,16 @@ RAT<T>::~RAT()
 }
 
 template <typename T>
-std::vector<int> RAT<T>::getARFLocations(int robLocation)
+int RAT<T>::getNextARFLocation(int ROBSpot)
 {
-	std::vector<int> returnVal;
+	int returnVal = -1;
 	for (int i = 0; i < numLocations; i++)
 	{
-		if ((locationsPtr[i].locationType == 'B') && (locationsPtr[i].locationNumber == robLocation))
+		if ((locationsPtr[i].locationType == 'B') && (locationsPtr[i].locationNumber == ROBSpot))
 		{
-			returnVal.push_back(i);
+			returnVal = i;
 			resetLocation(i);
+			break;
 		}
 	}
 	return returnVal;

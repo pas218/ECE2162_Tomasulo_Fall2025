@@ -59,7 +59,7 @@ int main()
 
     std::cout << "Begin main.cpp" << std::endl;
 	
-	int numARF = 32;
+	int numARF = 16;
     
 	
 	InputParser parser(numARF);
@@ -136,20 +136,11 @@ int main()
 	{
 		Tommy->fullAlgorithm();
 	}
-	std::cout << "Bruh can we get a table print?\n";
-	Tommy->printOutTimingTable();
 	//Tommy->printRAT(false);
 	//Tommy->printRAT(true);
 	//Tommy->printARF(false);
 	//Tommy->printARF(true);
-	Tommy->printRS(0);
-	Tommy->printRS(1);
-	Tommy->printRS(2);
-	Tommy->printROB();
-	Tommy->printRAT(0);
-	Tommy->printRAT(1);
-	Tommy->printARF(0);
-	Tommy->printARF(1);
+	Tommy->printOutput();
 	std::cout << "After\n";
     /*
 	// ...

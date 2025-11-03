@@ -64,6 +64,8 @@ class RS
 		
 		bool replaceROBDependency(int robLocation, T value);
 		
+		bool hasUnaddressedDependencies(int robLocation);
+
 		// If not rob spot is used here, return -1.
 		// Otherwise, return the location in the RS that correspondes with the input ROB location.
 		int findRSFromROB(int robLocation);

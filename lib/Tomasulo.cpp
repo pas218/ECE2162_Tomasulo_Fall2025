@@ -296,12 +296,43 @@ bool Tomasulo::execute()
 	bool success = 0;
 	// Find next instruction that has been issued but not executed.
 	// This loop is to START execution.
-    for (size_t h = 0; h < PC; ++h) 
+    for (size_t h = 0; h < numberInstructions; ++h) 
 	{  
+		
+
 		// Find instruction that has been issued, but not executed.
 		if (!((timingDiagram[h*numCol + 0].endCycle != 0) && (timingDiagram[h*numCol + 1].startCycle == 0)
 				&& (timingDiagram[h*numCol + 0].stepThisCycle == false)))
 		{
+			continue;
+		}
+
+		// Se if there are any unaddressed dependencies.
+		bool unaddressedDeps;
+		int robSpot = timingDiagram[h*numCol + 0].numROB;
+		bool yes = false;
+		if (timingDiagram[h*numCol + 0].isInt == true)
+		{
+			
+			unaddressedDeps = addiRS->hasUnaddressedDependencies(robSpot);
+		}
+		else if (timingDiagram[h*numCol + 0].fpAdd == true)
+		{
+			yes = true;
+			unaddressedDeps = addfRS->hasUnaddressedDependencies(robSpot);
+		}
+		else if (timingDiagram[h*numCol + 0].fpMult == true)
+		{
+			unaddressedDeps = mulfRS->hasUnaddressedDependencies(robSpot);
+		}
+
+		if (unaddressedDeps == true)
+		{
+			if (yes == true)
+			{
+				//std::cout << std::endl << "float failed dependencies" << std::endl;
+				//printRS(1);
+			}
 			continue;
 		}
 		
@@ -403,7 +434,7 @@ bool Tomasulo::wb()
 	{
 		// std::cout << "Inside numCBD if statement.\n";
 		// Find instruction that has completed execution cycle and (if load/store) memory as well.
-		for (size_t h = 0; h < PC; ++h) 
+		for (size_t h = 0; h < numberInstructions; ++h) 
 		{
 			// std::cout << "wb loop " << h << std::endl;
 			// Find instruction that has been issued, but not executed.
@@ -445,7 +476,7 @@ bool Tomasulo::wb()
 				{
 					//std::cout << "Wb fpAdd: " << currentCycle << std::endl;
 					addfRS->compute(RSSpot);
-					ROB->table[ROBSpot].value = static_cast<float>(addfRS->getValue(RSSpot)->computation);
+					ROB->table[ROBSpot].value = (addfRS->getValue(RSSpot)->computation);
 					ROB->table[ROBSpot].cmt_flag = 1;
 					addfRS->clearLocation(RSSpot);
 				}
@@ -457,7 +488,7 @@ bool Tomasulo::wb()
 				{
 					//std::cout << "Wb fpMult: " << currentCycle << std::endl;
 					mulfRS->compute(RSSpot);
-					ROB->table[ROBSpot].value = static_cast<float>(mulfRS->getValue(RSSpot)->computation);
+					ROB->table[ROBSpot].value = (mulfRS->getValue(RSSpot)->computation);
 					ROB->table[ROBSpot].cmt_flag = 1;
 					mulfRS->clearLocation(RSSpot);
 				}
@@ -493,7 +524,7 @@ bool Tomasulo::commit()
 	// Free ROB entry and update RAT (clear aliases). Advance ROB head to the next instruction.
 	// Mark instruction as committed (record commit cycle for table).
 	int ROBSpot;
-	for (size_t h = 0; h < PC; ++h) 
+	for (size_t h = 0; h < numberInstructions; ++h) 
 	{
 		//// std::cout << "Instr number: " << h << std::endl;
 		//// std::cout << "one\n";
@@ -514,24 +545,33 @@ bool Tomasulo::commit()
 		}
 		
 		//// std::cout << "three\n";
-
+		 
+		
 		commitReturn robCommit = ROB->commit(ROBSpot);
 
+		int regLocation;
 		if (robCommit.regType == 0)
 		{
-			std::vector<int> regLocations;
-			regLocations = IntRAT->getARFLocations(ROBSpot);
-			IntARF->replaceValues(regLocations, static_cast<int>(robCommit.returnValue));
+			regLocation = IntRAT->getNextARFLocation(ROBSpot);
+			while(regLocation != -1)
+			{
+				IntARF->changeValue(regLocation, static_cast<int>(robCommit.returnValue));
+				regLocation = IntRAT->getNextARFLocation(ROBSpot);
+			}
 		}
 		else if (robCommit.regType == 1)
 		{
-			std::vector<int> regLocations;
-			regLocations = FpRAT->getARFLocations(ROBSpot);
-			IntARF->replaceValues(regLocations, static_cast<float>(robCommit.returnValue));
+			regLocation = FpRAT->getNextARFLocation(ROBSpot);
+			while(regLocation != -1)
+			{
+				FpARF->changeValue(regLocation, robCommit.returnValue);
+				regLocation = FpRAT->getNextARFLocation(ROBSpot);
+			}
 		}
-
+		
 		timingDiagram[h*numCol + 4].startCycle = currentCycle;
 		timingDiagram[h*numCol + 4].endCycle = currentCycle;
+		
 		success = true;
 		break;
 	}
@@ -596,35 +636,7 @@ void Tomasulo::printRAT(bool select) // 0 for iteger, 1 for float.
 	}
 }
 
-/*
-class ReOrderBuf_entry
-{
-public:
-	int id;				//reorder buffer id is 0 or 1. 0 indicates integer, 1 indicates float. -1 indicates it is free.
-	int dst_id;			// destination register id.
-	float value;
-	int cmt_flag;		// 0 for not commit, 1 for commit;	
- 
-	ReOrderBuf_entry():id(0),dst_id(0),value(0.0),cmt_flag(0){}
-};
 
-class ReOrderBuf
-{
-public:
-	ReOrderBuf_entry *table;
-	int head;
-	int tail;
-	int n;
-	int size;
-
-	int get_size();
-	bool empty();
-	bool full();
-	
-	ReOrderBuf(int);
-	~ReOrderBuf(){delete[]table;}
-};
-*/
 void Tomasulo::printROB()
 {
 	std::cout << "Printing out ROB:\n";
@@ -636,7 +648,32 @@ void Tomasulo::printROB()
 	}
 }
 	
+void Tomasulo::printNonZeroRegVals()
+{
+	std::cout << "Printing integer registers: \n";
+	int value;
+	for (int i = 0; i < IntARF->getSize(); i++)
+	{
+		value = IntARF->getValue(i);
+		if (value != 0)
+		{
+			std::cout << "R" << i << ": " << value << std::endl;
+		}
+	}
 
+	std::cout << "Printing float registers: \n";
+	float valueFP;
+	for (int i = 0; i < FpARF->getSize(); i++)
+	{
+		valueFP = FpARF->getValue(i);
+		if (valueFP != 0.0)
+		{
+			std::cout << "F" << i << ": " << std::to_string(valueFP) << std::endl;
+		}
+	}
+}
+
+	
 void Tomasulo::printRS(int select) // 0 = addiRS, 1 = addfRS, mulfRS = 2
 {
 	std::cout << "Printing out ";
@@ -681,9 +718,10 @@ void Tomasulo::printRS(int select) // 0 = addiRS, 1 = addfRS, mulfRS = 2
 void Tomasulo::printOutTimingTable()
 {
 	std::cout << "Printing out timing table:\n";
-	std::cout << "  IS, EX, MEM, WB, CM\n";
+	std::cout << "          IS  EX  MEM  WB  CM\n";
 	for (int i = 0; i < numRow; i++)
 	{
+		std::cout << "Instr #" << i << ": ";
 		for (int j = 0; j < numCol; j++)
 		{
 		std::cout << timingDiagram[i*numCol+j].startCycle << "," << timingDiagram[i*numCol+j].endCycle << " ";
@@ -691,7 +729,13 @@ void Tomasulo::printOutTimingTable()
 		std::cout << std::endl;
 	}
 }
-		
+
+void Tomasulo::printOutput()
+{
+	printOutTimingTable();
+	printNonZeroRegVals();
+}
+
 bool Tomasulo::fullAlgorithm()
 {
 	clearSteps();
