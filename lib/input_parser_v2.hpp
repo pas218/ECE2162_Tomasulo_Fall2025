@@ -20,17 +20,25 @@ static constexpr char DELIM3[] = " ,\t()";
 
 typedef std::pair <int,float> mem_unit;
 
+// 
+// 0-1 integer adder
+// 2-3 floating point adder
+// 4 floating point multiplier
+// 5-6 memory
+//  7-8 branch
 enum Operation
 {
+	add = 0,
 	addi,
-	subi,
+	sub,
 	addf,
 	subf,
 	mulf,
 	load,
 	store,
 	beq,
-	bne
+	bne,
+	nop
 };
 
 class item
@@ -52,6 +60,7 @@ public:
 	item rt;
 	std::string name;
 	std::string sd_offset;
+	int immediate;
 	int t_issue;
 	int t_ex;
 	int t_mem;
@@ -111,12 +120,7 @@ public:
 
 
 
-struct InstBuf
-{
-    int free;
-    std::string inst;
-    InstBuf(): free(1), inst() {}
-};
+
 
 /*
 template<typename T>
@@ -147,6 +151,7 @@ public:
 	~FpARF(){delete[]table;}
 };
 */
+/*
 class RAT
 {
 public:
@@ -171,35 +176,6 @@ public:
 	int pointer;
 	FpRAT(int);
 	~FpRAT(){delete[]table;}
-};
-
-
-class ReOrderBuf_entry
-{
-public:
-	int id;				//reorder buffer id is 201 ~ 400, 0 for available entry.
-	int dst_id;			// destination register id.
-	float value;
-	int cmt_flag;		// 0 for not commit, 1 for commit;	
- 
-	ReOrderBuf_entry():id(0),dst_id(0),value(0.0),cmt_flag(0){}
-};
-
-class ReOrderBuf
-{
-public:
-	ReOrderBuf_entry *table;
-	int head;
-	int tail;
-	int n;
-	int size;
-
-	int get_size();
-	bool empty();
-	bool full();
-	
-	ReOrderBuf(int);
-	~ReOrderBuf(){delete[]table;}
 };
 
 
@@ -231,6 +207,7 @@ public:
 	RS_entry():time(0),icount(0),empty(1){};
 };
 
+/*
 class RS
 {
 public:
@@ -246,7 +223,7 @@ public:
 	RS(int );
 	~RS(){delete[]table;}
 };
-
+*/
 class AddIUnit
 {
 public:

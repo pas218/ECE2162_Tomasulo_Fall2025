@@ -57,6 +57,7 @@ bool ARF<T>::changeValue(int registerNumber, T value)
 	return returnVal;
 }
 
+
 template <typename T>
 T ARF<T>::getValue(int registerNumber)
 {

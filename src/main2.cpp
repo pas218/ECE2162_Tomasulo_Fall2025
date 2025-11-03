@@ -2,8 +2,10 @@
 //#include "../lib/ARF.hpp"
 #include "ARF.hpp"
 #include "CDB.hpp"
+#include "RS.hpp"
 #include "input_parser_v2.hpp"
-
+#include "ReOrderBuf.hpp"
+#include "Tomasulo.hpp"
 #include <iostream>
 #include <vector>
 
@@ -23,11 +25,10 @@ InstBuf ib;
 
 //IntARF *IntArf;
 //FpARF *FpArf;
-IntRAT *IntRat;
-FpRAT *FpRat;
-ReOrderBuf *ROB;
+//IntRAT *IntRat;
+//FpRAT *FpRat;
 
-RS *addiRS,*addfRS,*mulfRS,*memRS;
+//RS *memRS;
 RS_entry e_m, m_w, w_c;
 AddIUnit *addiunit, *memunit, *memunit2;
 AddFUnit *addfunit;
@@ -43,34 +44,66 @@ std::vector<inst> instruction;
 int main()
 {
 	
+	
 	ARF<int> *IntARF;
 	ARF<float> *FpARF;
+	RAT<int> *IntRAT;
+	RAT<float> *FpRAT;
+	RS<int, Ops> *addiRS;
+	RS<float, Ops> *addfRS;
+	RS<float, Ops> *mulfRS;
+	ReOrderBuf *ROB;
 	
+
+	
+
     std::cout << "Begin main.cpp" << std::endl;
 	
-	int numARF = 32;
+	int numARF = 16;
     
 	
 	InputParser parser(numARF);
     // Parse the input.txt file and print the input configuration that has been read
     parser.parse("src\\input.txt");
 	
+	/*
+	// Try not dynamically allocationg
+	ARF<int> IntARF(parser.intARFValues);
+	ARF<float> FpARF(parser.floatARFValues);
+	RAT<int> IntRAT(numARF);
+	RAT<float> FpRAT(numARF);
+	RS<int, Ops> addiRS(parser.num_addiRS);
+	RS<float, Ops> addfRS(parser.num_addfRS);
+	RS<float, Ops> mulfRS(parser.num_mulfRS);
+	ReOrderBuf ROB(parser.num_ROB);
+	*/
 	
 	IntARF = new ARF<int>(parser.intARFValues);
     FpARF  = new ARF<float>(parser.floatARFValues);
-
-	// Print out ARF to test.
-	for (int i = 0; i < numARF; i ++)
+	IntRAT = new RAT<int>(numARF);
+	FpRAT  = new RAT<float>(numARF);
+	
+	addiRS = new RS<int, Ops>(parser.num_addiRS);
+	addfRS = new RS<float, Ops>(parser.num_addfRS);
+	mulfRS = new RS<float, Ops>(parser.num_mulfRS);
+	
+	ROB    = new ReOrderBuf(parser.num_ROB);
+	
+/*
+	// Test out the instructions.
+	std::cout << "Instruction testing.\n";
+	for (int i = 0; i < parser.instruction.size(); i++)
 	{
-		std::cout << "IntARF[" << i << "] " << " = " << IntARF->getValue(i) << std::endl;
-		std::cout << "FloatARF[" << i << "] " << " = " << std::to_string(FpARF->getValue(i)) << std::endl;
+		std::cout << parser.instruction[i].opcode << " " << parser.instruction[i].rd.id << " " 
+			<< parser.instruction[i].rd.id << " " << parser.instruction[i].rt.id << std::endl;
 	}
+	*/
 
 	// I'm not sure if the CDB should be int or float...?
     CDB<int> intCDB(parser.num_CDB_buf);
     CDB<float> floatCDB(parser.num_CDB_buf);
 
-
+/*
 	// Example: push a value to the CDB
     std::cout << "Pushing value 42 to integer CDB..." << std::endl;
     bool success = intCDB.push(1, 5, 42);  // robID=1, destReg=5, value=42
@@ -89,14 +122,26 @@ int main()
     {
         std::cout << "CDB is empty, nothing to pop." << std::endl;
     }
-
+*/
 
 
 
     
 
 	std::cout << "Begin Tomasulo algorithm" << std::endl;
-
+	Tomasulo *Tommy;
+	Tommy = new Tomasulo(parser.instruction.size(), parser.cycle_addi, parser.cycle_addf, parser.cycle_mulf, 
+		parser.cycle_mem_exe, parser.cycle_mem_mem, parser.num_CDB_buf, IntARF, FpARF, addiRS, addfRS, mulfRS, IntRAT, FpRAT, ROB, parser.instruction);
+	for (int i = 0; i < 25; i++)
+	{
+		Tommy->fullAlgorithm();
+	}
+	//Tommy->printRAT(false);
+	//Tommy->printRAT(true);
+	//Tommy->printARF(false);
+	//Tommy->printARF(true);
+	Tommy->printOutput();
+	std::cout << "After\n";
     /*
 	// ...
 	// The actual issue/ex/mem/wb/commit process happens here
@@ -109,37 +154,11 @@ int main()
         // We could consider creating a new file for each of the functions below if there will be a lot of helper functions,
         // or maybe just one with everything.
         issue();
-            // Fetch and decode instruction from instruction queue (record issue cycle for table)
-            // Check if there are free RS for instruction and ROB entry (stall if not available), then allocate for new instruction
-            // Read operands in registers (if not available yet, record which RS will eventually produce the result)
-            // Register renaming, update RAT with source/target for new ROB entry
-            // Branch prediction will eventually happen here.
         execute();
-            // Execute instructions once all operands are ready (record execute cycle for table)
-            // "Compete" to use functional unit (oldest first)
-            // Advance instruction count for each instruction in execution. Wait for the number of cycles read from the input before marking the instruction as ready (cycle_addi, cycle_addf, etc.)
-            // When an FU's execution completes, mark the RS entry as 'finished' so that it can be written on the next writeback cycle
-            // For load/store, also calculate effective address (does not occupy integer ALU to do this).
-            // Eventually, branch resolution will happen here
         mem();
-            // Record mem cycle for table
-            // Check for "forwarding-from-a-store" as mentioned in project document. It takes 1 cycle to perform the forwarding if a match is found. If not found then the load accesses the memory for data.
-            // Once a load returns from the memory or gets the value from a previous store, its entry in the load/store queue is cleared.
-            // Note that it is correct not to clear this entry, but the queue can quickly fill up, causing structure hazards for future loads/stores.
         writeback();
-            // Broadcast results onto the CDB (other instructions waiting on it will need to pick it up), or buffer if the CDB is full
-            // Write result back to RS and ROB entry (record WB cycle for table)
-            // Mark the ready/finished bit in ROB since the instruction has completed execution
-            // Free reservation stations for future reuse when finished
-            // Store instructions write to memory in this stage
         commit();
-            // Commit an instruction when it is the oldest in the ROB (ROB head points to it) and the ready/finished bit is set.
-            // Note: we can only commit 1 instruction per cycle.
-            // If store instructions --> write into memory
-            // If other instruction --> write to ARF
-            // Free ROB entry and update RAT (clear aliases). Advance ROB head to the next instruction.
-            // Mark instruction as committed (record commit cycle for table).
-
+        
 
 
     }
@@ -160,10 +179,18 @@ int main()
     myARF.changeValue(0, 5); 
 	std::cout << "The new value of ARF(0) " << myARF.getValue(0) << std::endl;
 	*/
-	
+
 	// Delete dynamically allocated poiters;
+	
 	delete IntARF;
     delete FpARF;
+	delete IntRAT;
+	delete FpRAT;
+	delete addiRS;
+	delete addfRS;
+	delete mulfRS;
+	delete ROB;
+	delete Tommy;
 	
 	return 0;
 }

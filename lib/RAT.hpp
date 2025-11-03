@@ -19,11 +19,16 @@ class RAT
 		RAT(); 
         RAT(int numLocations);
 		~RAT();
+		
+		// Returns -1 if no location.
+		int getNextARFLocation(int ROBSpot);
+		int getSize();
         // Change the value of a location. Returns 1 if successful, otherwise return 0.
 		// If you want to change it to an ARF locatioin, isARF should be 1.
-		// If you want to change it to a ROB location, isARF should be 0 and make sure to enter the locationNumber.
+		// If you want to change it to a ROB location, isARF should be 0 and make sure to enter the rob location.
         bool changeValue(int locationNumber, bool isARF, int robNumber);
-        RAT_type getValue(int locationNumber);
+		bool resetLocation(int locationNumber);
+        RAT_type* getValue(int locationNumber);
 };
 
 

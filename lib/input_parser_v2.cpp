@@ -14,18 +14,17 @@ using namespace std;
 
 extern Operation opcode;
 extern item dst,src,tgt;
-extern InstBuf ib;
+//extern InstBuf ib;
 //extern IntARF *IntArf;
 //extern FpARF *FpArf;
-extern IntRAT *IntRat;
-extern FpRAT *FpRat;
-extern ReOrderBuf *ROB;
-extern RS *addiRS,*addfRS,*mulfRS,*memRS;
+//extern IntRAT *IntRat;
+//extern FpRAT *FpRat;
+//extern ReOrderBuf *ROB;
 extern AddIUnit *addiunit, *memunit, *memunit2;
 extern AddFUnit *addfunit;
 extern MulFUnit *mulfunit;
 
-extern int clk;		
+extern int currentCycle;		
 
 
 item::item() : value(0.0f), id(0), imme_flag(false), ready(false) {}
@@ -81,15 +80,9 @@ FpRAT::FpRAT(int n)
     }
 }
 */
-ReOrderBuf::ReOrderBuf(int n)
-{
-    size = n;
-    n = 0;
-    head = 0;
-    tail = 0;
-    table = new ReOrderBuf_entry[n];
-}
 
+
+/*
 RS::RS(int capacity)
 {
     n = capacity;
@@ -111,7 +104,7 @@ bool RS::full()
 {
     return size == n;
 }
-
+*/
 AddIUnit::AddIUnit()
 {
     empty = true;
@@ -266,10 +259,7 @@ void InputParser::parse(const std::string &filename)
 	
     
     // Initalize reservation stations and functional units (this will likely change later)
-	addiRS = new RS(num_addiRS);
-	addfRS = new RS(num_addfRS);
-	mulfRS = new RS(num_mulfRS);
-	memRS = new RS(num_memRS);
+	//memRS = new RS(num_memRS);
 	addiunit = new AddIUnit[num_addi];
 	memunit= new AddIUnit;
 	memunit2= new AddIUnit;
@@ -427,19 +417,39 @@ void InputParser::parse(const std::string &filename)
         //for (size_t i = 1; i < words.size(); ++i)
         //    std::cout << words[i] << " ";
         //std::cout << std::endl;
-
+		
+		/*
+			add = 0,
+	addi,
+	sub,
+	addf,
+	subf,
+	mulf,
+	load,
+	store,
+	beq,
+	bne,
+	nop
+		*/
 
         // Decode instruction and store all of the values that were read into the appropriate fields
         if (op == "Add")
         {
-            itmp.opcode = addi;
+            itmp.opcode = add;
             itmp.rd.id = stoi(words[1] + 1);
             itmp.rs.id = stoi(words[2] + 1);
             itmp.rt.id = stoi(words[3] + 1);
         }
+		else if (op == "Addi")
+		{
+			itmp.opcode = addi;
+            itmp.rd.id = stoi(words[1] + 1);
+            itmp.rs.id = stoi(words[2] + 1);
+            itmp.immediate = stoi(words[3] + 1);
+		}
         else if (op == "Sub")
         {
-            itmp.opcode = subi;
+            itmp.opcode = sub;
             itmp.rd.id = stoi(words[1] + 1);
             itmp.rs.id = stoi(words[2] + 1);
             itmp.rt.id = stoi(words[3] + 1);
@@ -458,7 +468,7 @@ void InputParser::parse(const std::string &filename)
             itmp.rs.id = stoi(words[2] + 1);
             itmp.rt.id = stoi(words[3] + 1);
         }
-        else if (op == "Mul.d")
+        else if (op == "Mult.d")
         {
             itmp.opcode = mulf;
             itmp.rd.id = stoi(words[1] + 1);
@@ -569,10 +579,13 @@ void InputParser::parse(const std::string &filename)
 
             switch (it.opcode)
             {
-                case addi:
-                    std::cout << "Add R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
+				case add:
+					std::cout << "Add R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
                     break;
-                case subi:
+                case addi:
+                    std::cout << "Add R immediate" << it.rd.id << ", R" << it.rs.id << ", " << it.immediate;
+                    break;
+                case sub:
                     std::cout << "Sub R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
                     break;
                 case addf:
@@ -582,7 +595,7 @@ void InputParser::parse(const std::string &filename)
                     std::cout << "Sub.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
                     break;
                 case mulf:
-                    std::cout << "Mul.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
+                    std::cout << "Mult.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
                     break;
                 case load:
                     std::cout << "Ld F" << it.rd.id << ", " << it.rt.value << "(R" << it.rs.id << ")";
@@ -645,7 +658,7 @@ void InputParser::output()
                     std::cout << "Sub.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
                     break;
                 case mulf:
-                    std::cout << "Mul.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
+                    std::cout << "Mult.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
                     break;
                 case load:
                     std::cout << "Ld F" << it.rd.id << ", " << it.rt.value << "(R" << it.rs.id << ")\t";

@@ -689,7 +689,7 @@ void InputParser::output()
         {
             if (FpARF->getValue(i) != 0)
             {
-                std::cout << "F" << i << " = " << FpA->getValue(i) << "\n";
+                std::cout << "F" << i << " = " << FpArf->getValue(i) << "\n";
             }
         }
     }
