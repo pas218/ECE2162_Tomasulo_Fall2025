@@ -1,3 +1,3 @@
 project(standard_classes)
 
-add_library(${PROJECT_NAME} input_parser_v2.cpp Tomasulo.cpp ReOrderBuf.cpp)
+add_library(${PROJECT_NAME} InputParser.cpp Tomasulo.cpp ReOrderBuf.cpp)

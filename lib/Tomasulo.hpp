@@ -6,7 +6,7 @@
 #include "RS.hpp"
 #include "RAT.hpp"
 #include "ReOrderBuf.hpp"
-#include "input_parser_v2.hpp"
+#include "InputParser.hpp"
 
 // A timing type that will contain the start and end cycle.
 // If an instruction just goes for one cycle, then both values will be identical.

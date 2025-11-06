@@ -1,6 +1,6 @@
-// input_parser.h
-#ifndef INPUT_PARSER_V2_H
-#define INPUT_PARSER_V2_H
+// InputParser.hpp
+#ifndef INPUT_PARSER_H
+#define INPUT_PARSER_H
 
 #include <string>
 #include <iostream>
@@ -119,82 +119,6 @@ public:
 
 
 
-
-
-
-/*
-template<typename T>
-class ARF
-{
-public:
-	int id;
-	bool ready;
-	T value;
-	ARF():id(0),ready(0){};
-};
-
-class IntARF
-{
-public:
-	ARF<int> *table;
-	int pointer;
-	IntARF(int);
-	~IntARF(){delete[]table;}
-};
-
-class FpARF
-{
-public:
-	ARF<float> *table;
-	int pointer;
-	FpARF(int);
-	~FpARF(){delete[]table;}
-};
-*/
-/*
-class RAT
-{
-public:
-	int alias;
-	float value;
-	RAT():value(0.0){};
-};
-
-class IntRAT
-{
-public:
-	RAT *table;
-	int pointer;
-	IntRAT(int);
-	~IntRAT(){delete[]table;}
-};
-
-class FpRAT
-{
-public:
-	RAT *table;
-	int pointer;
-	FpRAT(int);
-	~FpRAT(){delete[]table;}
-};
-
-
-/*
-void Addi();
-void Addf();
-void Mulf();
-void Store();
-void Load();
-void Beq();
-
-void initial();
-void issue();
-void execution();
-void mem();
-void writeback();
-void commit();
-*/
-
 class RS_entry
 {
 public:
@@ -207,23 +131,7 @@ public:
 	RS_entry():time(0),icount(0),empty(1){};
 };
 
-/*
-class RS
-{
-public:
-	RS_entry *table;
-	int head;
-	int tail;
-	int n;
-	int size;
-	
-	int get_size();
-	bool empty();
-	bool full();
-	RS(int );
-	~RS(){delete[]table;}
-};
-*/
+
 class AddIUnit
 {
 public:

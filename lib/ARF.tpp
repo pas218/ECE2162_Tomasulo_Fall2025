@@ -1,5 +1,5 @@
+// ARF.tpp
 #include <iostream>
-
 
 template <typename T>
 ARF<T>::ARF()
