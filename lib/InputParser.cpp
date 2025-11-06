@@ -1,5 +1,5 @@
-// input_parser.cpp
-#include "input_parser_v2.hpp"
+// InputParser.cpp
+#include "InputParser.hpp"
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -29,82 +29,7 @@ extern int currentCycle;
 
 item::item() : value(0.0f), id(0), imme_flag(false), ready(false) {}
 
-/*
-IntARF::IntARF(int n)
-{
-    pointer = n;
-    table = new ARF<int>[n];
 
-    for (int i = 0; i < n; i++)
-    {
-        table[i].id = i;
-        table[i].ready = true;
-        table[i].value = 0;
-    }
-}
-
-FpARF::FpARF(int n)
-{
-    pointer = n;
-    table = new ARF<float>[n];
-
-    for (int i = 0; i < n; i++)
-    {
-        table[i].id = i;
-        table[i].ready = true;
-        table[i].value = 0.0f;
-    }
-}
-
-IntRAT::IntRAT(int n)
-{
-    pointer = n;
-    table = new RAT[n];
-
-    for (int i = 0; i < n; i++)
-    {
-        table[i].alias = 0;
-        table[i].value = 0.0f;
-    }
-}
-
-FpRAT::FpRAT(int n)
-{
-    pointer = n;
-    table = new RAT[n];
-
-    for (int i = 0; i < n; i++)
-    {
-        table[i].alias = 0;
-        table[i].value = 0.0f;
-    }
-}
-*/
-
-
-/*
-RS::RS(int capacity)
-{
-    n = capacity;
-    table = new RS_entry[capacity];
-    head = 0;
-    tail = 0;
-    size = 0;
-}
-
-int RS::get_size() 
-{
-    return size;
-}
-bool RS::empty()
-{
-    return size == 0;
-}
-bool RS::full()
-{
-    return size == n;
-}
-*/
 AddIUnit::AddIUnit()
 {
     empty = true;
@@ -418,19 +343,7 @@ void InputParser::parse(const std::string &filename)
         //    std::cout << words[i] << " ";
         //std::cout << std::endl;
 		
-		/*
-			add = 0,
-	addi,
-	sub,
-	addf,
-	subf,
-	mulf,
-	load,
-	store,
-	beq,
-	bne,
-	nop
-		*/
+		
 
         // Decode instruction and store all of the values that were read into the appropriate fields
         if (op == "Add")
@@ -575,7 +488,7 @@ void InputParser::parse(const std::string &filename)
         for (size_t i = 0; i < instruction.size(); ++i)
         {
             const inst &it = instruction[i];
-            std::cout << i + 1 << ": ";
+		    std::cout << "Instr #" << (i+1) << ": ";
 
             switch (it.opcode)
             {
@@ -627,6 +540,7 @@ void InputParser::parse(const std::string &filename)
 }
 
 /*
+// Function that can be used to validate that all inputs are being read from the file correctly
 void InputParser::output()
 {
     std::cout << "\n-----------------------------------------------\n";

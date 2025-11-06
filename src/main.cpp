@@ -1,95 +1,108 @@
-#include <iostream>
-#include <string>
+// main.cpp
 #include "ARF.hpp"
-#include "RAT.hpp"
+#include "CDB.hpp"
 #include "RS.hpp"
+#include "InputParser.hpp"
+#include "ReOrderBuf.hpp"
+#include "Tomasulo.hpp"
+#include <iostream>
+#include <vector>
+
+// Global variables
+int num_ROB=0;
+int currentCycle = 0;
+
+Operation opcode;
+item dst,src,tgt;
+InstBuf ib;
+
+RS_entry e_m, m_w, w_c;
+AddIUnit *addiunit, *memunit, *memunit2;
+AddFUnit *addfunit;
+MulFUnit *mulfunit;
+
+
+// Vectors for storing memory and instructions
+std::vector<mem_unit> memory;
+std::vector<inst> instruction;
+
 
 
 int main()
 {
-	/*
-	std::cout << "Hi!" << std::endl;
-	ARF<int> myARF(10);;
-	std::cout << "The value of ARF(0) " << myARF.getValue(0) << std::endl;
-    myARF.changeValue(0, 5); 
-	std::cout << "The new value of ARF(0) " << myARF.getValue(0) << std::endl;
-	*/
+	ARF<int> *IntARF;
+	ARF<float> *FpARF;
+	RAT<int> *IntRAT;
+	RAT<float> *FpRAT;
+	RS<int, Ops> *addiRS;
+	RS<float, Ops> *addfRS;
+	RS<float, Ops> *mulfRS;
+	ReOrderBuf *ROB;
 	
-	// Quick RAT Testing
-	RAT<int> int_RAT;
-	RAT<float> float_RAT;
+    std::cout << "Begin main.cpp" << std::endl;
 	
-	RAT_type float_RAT_instance;
-	RAT_type int_RAT_instance;
+	int numARF = 16;
+    
 	
+	InputParser parser(numARF);
+
+    // Parse the input.txt file and print the input configuration that has been read
+    parser.parse("src\\input.txt");
 	
-	int_RAT_instance = int_RAT.getValue(3);
-	std::cout << "The value of int_RAT(3): " << int_RAT_instance.locationType << std::to_string(int_RAT_instance.locationNumber) << std::endl;
-	int_RAT.changeValue(3, 0, 6);
-	int_RAT_instance = int_RAT.getValue(3);
-	std::cout << "The new value of int_RAT(3): " << int_RAT_instance.locationType << int_RAT_instance.locationNumber << std::endl;
+	IntARF = new ARF<int>(parser.intARFValues);
+    FpARF  = new ARF<float>(parser.floatARFValues);
+	IntRAT = new RAT<int>(numARF);
+	FpRAT  = new RAT<float>(numARF);
 	
-	std::cout << std::endl;
+	addiRS = new RS<int, Ops>(parser.num_addiRS);
+	addfRS = new RS<float, Ops>(parser.num_addfRS);
+	mulfRS = new RS<float, Ops>(parser.num_mulfRS);
 	
-	float_RAT_instance = float_RAT.getValue(3);
-	std::cout << "The value of float_RAT(3): " << float_RAT_instance.locationType << std::to_string(float_RAT_instance.locationNumber) << std::endl;
-	float_RAT.changeValue(3, 0, 6);
-	float_RAT_instance = float_RAT.getValue(3);
-	std::cout << "The new value of float_RAT(3): " << float_RAT_instance.locationType << float_RAT_instance.locationNumber << std::endl;
+	ROB    = new ReOrderBuf(parser.num_ROB);
 	
-	std::cout << std::endl;
+
+
+	// I'm not sure if the CDB should be int or float...?
+    //CDB<int> intCDB(parser.num_CDB_buf);
+    //CDB<float> floatCDB(parser.num_CDB_buf);
+
+
+
+	std::cout << "Begin Tomasulo algorithm..." << std::endl;
+
+	Tomasulo *Tommy;
+	Tommy = new Tomasulo(parser.instruction.size(), parser.cycle_addi, parser.cycle_addf, parser.cycle_mulf, 
+		parser.cycle_mem_exe, parser.cycle_mem_mem, parser.num_CDB_buf, IntARF, FpARF, addiRS, addfRS, mulfRS, IntRAT, FpRAT, ROB, parser.instruction);
 	
-	/*
+	// Run the Tomasulo algorithm
+	for (int i = 0; i < 25; i++)
+	{
+		Tommy->fullAlgorithm();
+	}
+
+	//Tommy->printRAT(false);
+	//Tommy->printRAT(true);
+	//Tommy->printARF(false);
+	//Tommy->printARF(true);
+
+	std::cout << "Tomasulo algorithm finished." << std::endl;
+
+
+	// Print all results to the terminal
+	Tommy->printOutput();
+
+	std::cout << "\nProgram End" << std::endl;
+
+	// Delete dynamically allocated pointers;
+	delete IntARF;
+    delete FpARF;
+	delete IntRAT;
+	delete FpRAT;
+	delete addiRS;
+	delete addfRS;
+	delete mulfRS;
+	delete ROB;
+	delete Tommy;
 	
-	template <typename T, typename Op>
-	struct RS_type{
-		Op operation;
-		int robLocation;       // Valid value for location is >0. If this is -1, then that means there is no entry.
-		int robDependency0;    // Valid value for dependency is >0. If this is -1, then that means there is no dependency.
-		int robDependency1;
-		T value0;
-		T value1;
-	};
-*/
-	
-	// Quick RS Testing.
-	RS<int, Ops> integerRS;
-	RS_type<int, Ops>* intRSStation = integerRS.getValue(3);
-	std::cout << "The initial value of integer RS (3):\n";
-	std::cout << "Operation: " << std::to_string(intRSStation->operation) << std::endl;
-	std::cout << "RobLocation: " << std::to_string(intRSStation->robLocation) << std::endl;
-	std::cout << "RobDependency0: " << std::to_string(intRSStation->robDependency0) << std::endl;
-	std::cout << "RobDependency1: " << std::to_string(intRSStation->robDependency1) << std::endl;
-	std::cout << "Value0: " << std::to_string(intRSStation->value0) << std::endl;
-	std::cout << "Value1: " << std::to_string(intRSStation->value1) << std::endl;
-	
-	std::cout << std::endl;
-	// Change RS values.
-	
-	integerRS.changeROBLocation(3, 5);
-	integerRS.changeOperation(3, ADD);
-	integerRS.changeROBDependency(3, 4, 3);
-	integerRS.changeRSVal0(3, 18);
-	integerRS.changeRSVal1(3, 72);
-	intRSStation = integerRS.getValue(3);
-	std::cout << "The changed value of integer RS (3):\n";
-	std::cout << "Operation: " << std::to_string(intRSStation->operation) << std::endl;
-	std::cout << "RobLocation: " << std::to_string(intRSStation->robLocation) << std::endl;
-	std::cout << "RobDependency0: " << std::to_string(intRSStation->robDependency0) << std::endl;
-	std::cout << "RobDependency1: " << std::to_string(intRSStation->robDependency1) << std::endl;
-	std::cout << "Value0: " << std::to_string(intRSStation->value0) << std::endl;
-	std::cout << "Value1: " << std::to_string(intRSStation->value1) << std::endl;
-	
-	std::cout << std::endl;
-	
-	integerRS.clearLocation(3);
-	intRSStation = integerRS.getValue(3);
-	std::cout << "The cleared value of integer RS (3):\n";
-	std::cout << "Operation: " << std::to_string(intRSStation->operation) << std::endl;
-	std::cout << "RobLocation: " << std::to_string(intRSStation->robLocation) << std::endl;
-	std::cout << "RobDependency0: " << std::to_string(intRSStation->robDependency0) << std::endl;
-	std::cout << "RobDependency1: " << std::to_string(intRSStation->robDependency1) << std::endl;
-	std::cout << "Value0: " << std::to_string(intRSStation->value0) << std::endl;
-	std::cout << "Value1: " << std::to_string(intRSStation->value1) << std::endl;
 	return 0;
 }

@@ -1,3 +1,4 @@
+// RS.tpp
 template <typename T, typename Op>
 inline bool RS<T, Op>::checkBounds(int stationNumber)
 {
