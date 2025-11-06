@@ -3,8 +3,6 @@
 #include <iostream>
 
 
-// There are intellisense warnings in this file, but I'm not sure why because I believe it's correct and working...?
-
 
 template <typename T>
 CDB_entry<T>::CDB_entry()
