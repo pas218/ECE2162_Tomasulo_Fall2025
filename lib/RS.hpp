@@ -33,15 +33,16 @@ enum multOps
 
 
 template <typename T, typename Op>
-struct RS_type{
-	Op operation;
-	int robLocation;       // Valid value for location is >0. If this is -1, then that means there is no entry.
-	int robDependency0;    // Valid value for dependency is >0. If this is -1, then that means there is no dependency.
-	int robDependency1;
-	T value0;
-	T value1;
-	T computation;
-	bool computationDone;
+struct RS_type
+{
+	Op operation = EMPTY;
+	int robLocation = -1;       // Valid value for location is >0. If this is -1, then that means there is no entry.
+	int robDependency0 = -1;    // Valid value for dependency is >0. If this is -1, then that means there is no dependency.
+	int robDependency1 = -1;
+	T value0 = 0;
+	T value1 = 0;
+	T computation = 0;
+	bool computationDone = false;
 };
 
 
