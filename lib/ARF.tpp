@@ -6,14 +6,14 @@ ARF<T>::ARF()
 {
     // Arbitrarily decide 32 registers.
     numRegisters = 32;
-    registersPtr = new T[32];
+    registersPtr = new T[32]();
 }
 
 template <typename T>
 ARF<T>::ARF(int numRegistersInput)
 {
     numRegisters = numRegistersInput;
-    registersPtr = new T(numRegistersInput);
+    registersPtr = new T[numRegistersInput]();
 	// Initialize all of the registers to 0.
 	for (int i = 0; i < numRegistersInput; i++)
 	{
@@ -25,7 +25,7 @@ template <typename T>
 ARF<T>::ARF(std::vector<T> &values)
 {
 	numRegisters = values.size();
-    registersPtr = new T(values.size());
+    registersPtr = new T[values.size()]();
 	// Initialize all of the registers to 0.
 	for (int i = 0; i < values.size(); i++)
 	{
