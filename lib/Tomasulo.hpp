@@ -36,6 +36,7 @@ class Tomasulo
 		// So, to get instruction 1 wb column, it would be 1*5 + 3.
         std::vector<timing_type> timingDiagram;
 		std::vector<inst> instruction;
+		std::vector<mem_unit> *memory; // TODO: not 100% sure if this should be memory or *memory
 		
 		const int numRow;
 		const int numCol = 5;
@@ -53,18 +54,19 @@ class Tomasulo
 		RS<int, Ops> *addiRS;
 		RS<float, Ops> *addfRS;
 		RS<float, Ops> *mulfRS;
+		RS<float, Ops> *memRS;
 		RAT<int> *IntRAT; 
 		RAT<float> *FpRAT;
 		ReOrderBuf *ROB;
-		
+
 		bool done;
 		int currentCycle;
 
     public:
 		
 		Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int numExFPMult, int numExLoadStore, int numMemLoadStore, int numCDB,
-			ARF<int> *IntARF, ARF<float> *FpARF, RS<int, Ops> *addiRS, RS<float, Ops> *addfRS, RS<float, Ops> *mulfRS, RAT<int> *IntRAT, 
-				RAT<float> *FpRAT, ReOrderBuf *ROB, std::vector<inst> &instruction);
+			ARF<int> *IntARF, ARF<float> *FpARF, RS<int, Ops> *addiRS, RS<float, Ops> *addfRS, RS<float, Ops> *mulfRS, RS<float, Ops> *memRS,
+			RAT<int> *IntRAT, RAT<float> *FpRAT, ReOrderBuf *ROB, std::vector<inst> &instruction, std::vector<mem_unit> *memory); // TODO: should this be "*memory" or "&memory"?
 		bool issue();
 		bool execute();
 		bool mem();
@@ -76,6 +78,7 @@ class Tomasulo
 		void printRAT(bool select); // 0 for iteger, 1 for float.
 		void printROB();
 		void printNonZeroRegVals();
+		void printNonZeroMemVals();
 		void printRS(int select); // 0 = addiRS, 1 = addfRS, mulfRS = 2
 		void printOutTimingTable();
 		void printOutput();
