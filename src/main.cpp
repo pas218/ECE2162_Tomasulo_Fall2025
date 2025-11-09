@@ -37,6 +37,7 @@ int main()
 	RS<int, Ops> *addiRS;
 	RS<float, Ops> *addfRS;
 	RS<float, Ops> *mulfRS;
+	RS<float, Ops> *memRS;
 	ReOrderBuf *ROB;
 	
     std::cout << "Begin main.cpp" << std::endl;
@@ -57,6 +58,7 @@ int main()
 	addiRS = new RS<int, Ops>(parser.num_addiRS);
 	addfRS = new RS<float, Ops>(parser.num_addfRS);
 	mulfRS = new RS<float, Ops>(parser.num_mulfRS);
+	memRS = new RS<float, Ops>(parser.num_memRS);
 	
 	ROB    = new ReOrderBuf(parser.num_ROB);
 	
@@ -71,11 +73,12 @@ int main()
 	std::cout << "Begin Tomasulo algorithm..." << std::endl;
 
 	Tomasulo *Tommy;
-	Tommy = new Tomasulo(parser.instruction.size(), parser.cycle_addi, parser.cycle_addf, parser.cycle_mulf, 
-		parser.cycle_mem_exe, parser.cycle_mem_mem, parser.num_CDB_buf, IntARF, FpARF, addiRS, addfRS, mulfRS, IntRAT, FpRAT, ROB, parser.instruction);
-	
+	Tommy = new Tomasulo(parser.instruction.size(), parser.cycle_addi, parser.cycle_addf, parser.cycle_mulf,
+		parser.cycle_mem_exe, parser.cycle_mem_mem, parser.num_CDB_buf, IntARF, FpARF, addiRS, addfRS, mulfRS,
+		memRS, IntRAT, FpRAT, ROB, parser.instruction, &parser.memory);
+
 	// Run the Tomasulo algorithm
-	for (int i = 0; i < 25; i++)
+	for (int i = 0; i < 25; i++) // TODO: Dynamically set the total number of iterations? Or, just make this a parameter.
 	{
 		Tommy->fullAlgorithm();
 	}
@@ -101,6 +104,7 @@ int main()
 	delete addiRS;
 	delete addfRS;
 	delete mulfRS;
+	delete memRS;
 	delete ROB;
 	delete Tommy;
 	
