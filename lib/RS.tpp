@@ -275,20 +275,21 @@ bool RS<T, Op>::compute(int stationNumber)
 template <typename T, typename Op>
 bool RS<T, Op>::clearLocation(int stationNumber)
 {
-	bool returnVal = checkBounds(stationNumber) && (takenRobSpots.count(stationNumber) > 0);
-	if (returnVal)
-	{
-		stationsPtr[stationNumber].operation = EMPTY;
-		stationsPtr[stationNumber].robLocation = -1;
-		stationsPtr[stationNumber].robDependency0 = -1;
-		stationsPtr[stationNumber].robDependency1 = -1;
-		stationsPtr[stationNumber].value0 = static_cast<T>(0);
-		stationsPtr[stationNumber].value1 = static_cast<T>(0);
-		stationsPtr[stationNumber].computation = static_cast<T>(0);
-		stationsPtr[stationNumber].computationDone = false;
-		takenRobSpots.erase(stationNumber);
-	}
-	return returnVal;
+    bool returnVal = checkBounds(stationNumber) && (takenRobSpots.count(stationsPtr[stationNumber].robLocation) > 0);
+    if (returnVal)
+    {
+        takenRobSpots.erase(stationsPtr[stationNumber].robLocation);
+        
+        stationsPtr[stationNumber].operation = EMPTY;
+        stationsPtr[stationNumber].robLocation = -1;
+        stationsPtr[stationNumber].robDependency0 = -1;
+        stationsPtr[stationNumber].robDependency1 = -1;
+        stationsPtr[stationNumber].value0 = static_cast<T>(0);
+        stationsPtr[stationNumber].value1 = static_cast<T>(0);
+        stationsPtr[stationNumber].computation = static_cast<T>(0);
+        stationsPtr[stationNumber].computationDone = false;
+    }
+    return returnVal;
 }
 
 template <typename T, typename Op>
