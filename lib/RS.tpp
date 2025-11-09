@@ -106,11 +106,13 @@ bool RS<T, Op>::replaceROBDependency(int robLocation, T value)
 		{
 			returnVal = true;
 			changeRSVal0(i, value);
+			getValue(i)->robDependency0 = -1;  // Clear the dependency
 		}
 		if (getValue(i)->robDependency1 == robLocation)
 		{
 			returnVal = true;
 			changeRSVal1(i, value);
+			getValue(i)->robDependency1 = -1;  // Clear the dependency
 		}
 	}
 	return returnVal;
@@ -153,13 +155,13 @@ int RS<T, Op>::getSize()
 template <typename T, typename Op>
 bool RS<T, Op>::changeROBLocation(int stationNumber, int robNumber)
 {
-	bool returnVal = checkBounds(stationNumber) && (takenRobSpots.count(stationNumber) == 0);
-	if (returnVal)
-	{
-		stationsPtr[stationNumber].robLocation = robNumber;
-		takenRobSpots.insert(stationNumber);
-	}
-	return returnVal;
+    bool returnVal = checkBounds(stationNumber) && (takenRobSpots.count(robNumber) == 0);
+    if (returnVal)
+    {
+        stationsPtr[stationNumber].robLocation = robNumber;
+        takenRobSpots.insert(robNumber);  // Insert ROB number, not station number
+    }
+    return returnVal;
 }
 
 template <typename T, typename Op>

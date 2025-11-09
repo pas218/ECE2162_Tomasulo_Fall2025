@@ -280,7 +280,7 @@ bool Tomasulo::issue()
 			
 			//std::cout << "Inside fpAdd\n";
 		}
-		else if(operationType == 2)
+		else if (operationType == 2)
 		{
 			timingDiagram[PC*numCol + 0].fpMult = true;
 			
@@ -326,6 +326,7 @@ bool Tomasulo::execute()
 		}
 		else if (timingDiagram[h*numCol + 0].fpMult == true)
 		{
+			//yes = true;
 			unaddressedDeps = mulfRS->hasUnaddressedDependencies(robSpot);
 		}
 
@@ -336,6 +337,7 @@ bool Tomasulo::execute()
 			{
 				//std::cout << std::endl << "float failed dependencies" << std::endl;
 				//printRS(1);
+				//printRS(2);
 			}
 			*/
 			continue;
@@ -399,7 +401,13 @@ bool Tomasulo::execute()
 				timingDiagram[h*numCol + 0].stepThisCycle = true;
 			}
 		}
-		
+
+		/*
+		if (timingDiagram[h*numCol + 1].startCycle == currentCycle)
+		{
+    		std::cout << "Starting execution of instruction #" << h << " at cycle " << currentCycle << std::endl;
+		}
+		*/
 		success = true;
 	}
 
@@ -427,8 +435,7 @@ bool Tomasulo::wb()
 {
 	bool success = 0;
 
-	//std::cout << "Wb cycle: " << currentCycle << std::endl;
-	// std::cout << "WB cycle: " << currentCycle << std::endl;
+	//std::cout << "WB cycle: " << currentCycle << std::endl;
 
 	// Broadcast results onto the CDB (other instructions waiting on it will need to pick it up), or buffer if the CDB is full
 	// Write result back to RS and ROB entry (record WB cycle for table)
@@ -442,12 +449,12 @@ bool Tomasulo::wb()
 	// Assume CDB is size 1.
 	if (numCDB == 1)
 	{
-		// std::cout << "Inside numCBD if statement.\n";
+		//std::cout << "Inside numCBD if statement.\n";
 
 		// Find instruction that has completed execution cycle and (if load/store) memory as well.
 		for (size_t h = 0; h < numberInstructions; ++h) 
 		{
-			// std::cout << "wb loop " << h << std::endl;
+			//std::cout << "wb loop " << h << std::endl;
 
 			// Find instruction that has been issued, but not executed.
 			if (!((timingDiagram[h*numCol + 1].endCycle != 0) && (timingDiagram[h*numCol + 3].startCycle == 0) 
@@ -464,7 +471,7 @@ bool Tomasulo::wb()
 			}
 			*/
 			
-			// std::cout << "In wb.\n";
+			//std::cout << "In wb.\n";
 
 			int ROBSpot = timingDiagram[h*numCol + 0].numROB;
 			int RSSpot;
@@ -486,6 +493,9 @@ bool Tomasulo::wb()
 			else if (timingDiagram[h*numCol + 0].fpAdd == true)
 			{
 				RSSpot = addfRS->findRSFromROB(ROBSpot);
+
+				//std::cout << "WB, FpAdd, RSSpot: " << RSSpot << ", current cycle: " << currentCycle << std::endl;
+
 				if (RSSpot != -1)
 				{
 					//std::cout << "Wb fpAdd: " << currentCycle << std::endl;
@@ -499,6 +509,9 @@ bool Tomasulo::wb()
 			else if (timingDiagram[h*numCol + 0].fpMult == true)
 			{
 				RSSpot = mulfRS->findRSFromROB(ROBSpot);
+
+				//std::cout << "WB, FpMult, RSSpot: " << RSSpot << ", current cycle: " << currentCycle << std::endl;
+
 				if (RSSpot != -1)
 				{
 					//std::cout << "Wb fpMult: " << currentCycle << std::endl;
@@ -602,11 +615,11 @@ bool Tomasulo::commit()
 
 void Tomasulo::clearSteps()
 {
-	for (int i = 0; i < numberInstructions; i++)
-	{
+    for (int i = 0; i < numberInstructions; i++)
+    {
 		timingDiagram[i*numCol + 0].stepThisCycle = false;
-	}
-}
+        }
+    }
 timing_type Tomasulo::getValue(int numInstr, int numCycle)
 {
 	return timingDiagram[numInstr*numCol + numCycle];
