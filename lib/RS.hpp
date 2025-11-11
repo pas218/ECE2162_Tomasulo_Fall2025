@@ -8,10 +8,12 @@
 enum Ops
 {
 	EMPTY = 0,
-	ADD = 1,
-	SUB = 2,
-	MULT = 3,
-	DIV = 4
+	ADD,
+	SUB,
+	MULT,
+	DIV,
+	BEQ,
+	BNE
 };
 
 
@@ -42,6 +44,9 @@ struct RS_type
 	T value0 = 0;
 	T value1 = 0;
 	T computation = 0;
+	bool isBranch;
+	int  branchOffset;
+	bool takeBranch;
 	bool computationDone = false;
 };
 
@@ -93,6 +98,7 @@ class RS
 		// Change the value of an operation slot. Returns 1 if successful, otherwise return 0.
 		bool changeRSVal0(int stationNumber, T val0);
 		bool changeRSVal1(int stationNumber, T val1);
+
 		bool compute(int stationNumber);
 		
 		// Clears the location of an RS station.

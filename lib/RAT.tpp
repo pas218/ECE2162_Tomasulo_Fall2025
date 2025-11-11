@@ -42,6 +42,23 @@ RAT<T>::RAT(int numLocations)
 }
 
 template <typename T>
+RAT<T>::RAT(RAT<T>& input_class)
+{
+	int num = input_class.getSize();
+	this->numLocations = num;
+	locationsPtr = new RAT_type[num];
+	
+	// Copy over values.
+	RAT_type *copyHelper;
+	for (int i = 0; i < num; i++)
+	{
+		copyHelper = input_class.getValue(i);
+		locationsPtr[i].locationType = copyHelper->locationType;
+		locationsPtr[i].locationNumber = copyHelper->locationNumber;
+	}
+}
+
+template <typename T>
 RAT<T>::~RAT()
 {
 	delete[] locationsPtr;
@@ -112,6 +129,28 @@ bool RAT<T>::resetLocation(int locationNumber)
 	locationsPtr[locationNumber].locationNumber = locationNumber;
 	return true;
 }
+
+template <typename T>
+std::vector<RAT_type> RAT<T>::exportRAT()
+{
+	std::vector<RAT_type> returnVector;
+	for (int i = 0; i < numLocations; i++)
+	{
+		returnVector.push_back(locationsPtr[i]);
+	}
+	return returnVector;
+}
+
+template <typename T>
+void RAT<T>::recoverRAT(std::vector<RAT_type> &numbers)
+{
+	// Copy over values.
+	for (int i = 0; i < numbers.size(); i++)
+	{
+		locationsPtr[i] = numbers[i];
+	}
+}
+
 
 template <typename T>
 RAT_type* RAT<T>::getValue(int locationNumber)

@@ -11,13 +11,6 @@ inline bool RS<T, Op>::checkBounds(int stationNumber)
 	
 }
 
-/*
-template <typename T, typename Op>
-inline bool RS<T, Op>::checkRobFree(int robLocation)
-{
-	return 
-}
-*/
 
 template <typename T, typename Op>
 RS<T, Op>::RS()
@@ -44,6 +37,9 @@ RS<T, Op>::RS()
 		stationsPtr[i].robLocation    = -1;
 		stationsPtr[i].robDependency0 = -1;
 		stationsPtr[i].robDependency1 = -1;
+		stationsPtr[i].isBranch = 0;
+		stationsPtr[i].branchOffset = 0;
+		stationsPtr[i].takeBranch = 0;
 		stationsPtr[i].computationDone = false;
 	}
 }
@@ -72,6 +68,9 @@ RS<T, Op>::RS(int numLocations)
 		stationsPtr[i].robLocation    = -1;
 		stationsPtr[i].robDependency0 = -1;
 		stationsPtr[i].robDependency1 = -1;
+		stationsPtr[i].isBranch = 0;
+		stationsPtr[i].branchOffset = 0;
+		stationsPtr[i].takeBranch = 0;
 		stationsPtr[i].computationDone = false;
 	}
 }
@@ -233,6 +232,7 @@ bool RS<T, Op>::changeRSVal1(int stationNumber, T val1)
 	return returnVal;
 }
 
+
 template <typename T, typename Op>
 bool RS<T, Op>::compute(int stationNumber)
 {
@@ -264,6 +264,26 @@ bool RS<T, Op>::compute(int stationNumber)
 					static_cast<T>(stationsPtr[stationNumber].value0) / static_cast<T>(stationsPtr[stationNumber].value1);
 				stationsPtr[stationNumber].computationDone = true;
 				break;
+			case BEQ:
+				if (static_cast<T>(stationsPtr[stationNumber].value0) == static_cast<T>(stationsPtr[stationNumber].value1))
+				{
+					stationsPtr[stationNumber].takeBranch = 1;
+				}
+				else
+				{
+					stationsPtr[stationNumber].takeBranch = 0;
+				}
+				break;
+			case BNE:
+				if (static_cast<T>(stationsPtr[stationNumber].value0) != static_cast<T>(stationsPtr[stationNumber].value1))
+				{
+					stationsPtr[stationNumber].takeBranch = 1;
+				}
+				else
+				{
+					stationsPtr[stationNumber].takeBranch = 0;
+				}
+				break;
 			default:
 				std::cout << "Invalid operation.\n";
 				break;
@@ -271,6 +291,7 @@ bool RS<T, Op>::compute(int stationNumber)
 	}
 	return returnVal;
 }
+
 
 template <typename T, typename Op>
 bool RS<T, Op>::clearLocation(int stationNumber)
@@ -288,6 +309,8 @@ bool RS<T, Op>::clearLocation(int stationNumber)
         stationsPtr[stationNumber].value1 = static_cast<T>(0);
         stationsPtr[stationNumber].computation = static_cast<T>(0);
         stationsPtr[stationNumber].computationDone = false;
+		stationsPtr[stationNumber].isBranch = false;
+		stationsPtr[stationNumber].branchOffset = 0;
     }
     return returnVal;
 }

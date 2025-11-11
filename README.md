@@ -26,3 +26,10 @@ cd build
 cmake -G "MinGW Makefiles" ..
 cd ..
 ./build/ECE2162_Tomasulo_Fall2025.exe
+
+## Calling the function
+You can specify the file path of the input file through the command line.
+If no file path is given, the program will use the default path of "src/input.txt".
+
+Example (uses "src/input_file.txt"):
+./build/ECE2162\ECE2162_Tomasulo_Fall2025 src/input_file.txt
