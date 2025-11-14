@@ -38,6 +38,11 @@ class Tomasulo
 		std::vector<inst> instruction;
 		std::vector<mem_unit> *memory; // TODO: not 100% sure if this should be memory or *memory
 		
+		int storeCommitInProgress;      // ROB spot of store currently committing (-1 if none)
+		int storeCommitStartCycle;      // Cycle when current store commit started
+		int storeCommitInstrIndex;      // Instruction index of store being committed
+		int memoryBusFreeAtCycle;       // Track when the single-ported memory bus is free to be accessed.
+
 		const int numRow;
 		const int numCol = 5;
 		const int numberInstructions;
@@ -83,6 +88,7 @@ class Tomasulo
 		void printOutTimingTable();
 		void printOutput();
 		bool fullAlgorithm();
+		bool allInstructionsCommitted();
 		
 };
 
