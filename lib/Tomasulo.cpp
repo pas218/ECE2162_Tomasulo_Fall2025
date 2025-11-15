@@ -23,7 +23,11 @@ Tomasulo::Tomasulo(int numberInstructions, int numExInt, int numExFPAdd, int num
 	done              = 0;
 	currentCycle      = 1;
 	PC = 0;
-	
+	storeCommitInProgress = -1;
+	storeCommitStartCycle = 0;
+	storeCommitInstrIndex = -1;
+	memoryBusFreeAtCycle = 1;  // Memory bus is initially free
+
 	for(int i = 0; i < numRow*numCol; i++)
 	{
 		timing_type temp;
@@ -138,22 +142,38 @@ bool Tomasulo::issue()
 	
 	// SECTION 2: ACTUALLY PERFORM ISSUE, ASSUMING THERE IS VIABILITY
 	
-	// Write the to ROB, RS, RAT, and timing table.
+	// Write to the ROB, RS, RAT, and timing table.
 	// operationType: 0 = int add/subtract, 1 = Fp add/subtract, 2 = fp mult, 3 = Memory, 4 = Branch, 5 = NOP
 	int freeROBSpot = ROB->freeSpot();
-	if (freeRSSpot != -1)
+	if (freeRSSpot != -1 && freeROBSpot != -1) // Structure hazards
 	{
 		// ROB.
 		if (operationType == 0)
 		{
 			ROB->table[freeROBSpot].id = 0;
+			ROB->table[freeROBSpot].dst_id = ins.rd.id;
 		}
-		else if ((operationType == 1) || (operationType == 2) || (operationType == 3))
+		else if (operationType == 1 || operationType == 2)
 		{
 			ROB->table[freeROBSpot].id = 1;
+			ROB->table[freeROBSpot].dst_id = ins.rd.id;
 		}
-
-		ROB->table[freeROBSpot].dst_id = ins.rd.id;
+		else if (operationType == 3)
+		{
+			// Memory operations
+			if (ins.opcode == load)
+			{
+				ROB->table[freeROBSpot].id = 1;
+				ROB->table[freeROBSpot].dst_id = ins.rd.id;
+			}
+			else if (ins.opcode == store)
+			{
+				// Use -2 to indicate "in use (so don't reuse) but there's no destination register".
+				// This is because stores don't have a destination register and must be handled in a special way.
+				ROB->table[freeROBSpot].id = -2;     
+				ROB->table[freeROBSpot].dst_id = -1;
+			}
+		}
 		
 		// RS.
 		if (operationType == 0)
@@ -325,9 +345,14 @@ bool Tomasulo::issue()
 				int dataRegID = ins.rs.id;
 				int dataDep = ROB->findDependency(floatDependency, dataRegID);
 				
-				// Store the data dependency in ROB for checking at commit time
-
-				// TODO: I suspect there is something wrong or missing here
+				// Store a marker in ROB indicating there's a data dependency to check
+				if (dataDep != -1)
+				{
+					// Mark that store has unresolved data dependency
+					ROB->table[freeROBSpot].cmt_flag = -1; // Use -1 to mean "waiting for data"
+				}
+				
+				// NOTE: Stores do NOT update RAT since they don't write to registers
 			}
 		}
 		
@@ -364,9 +389,11 @@ bool Tomasulo::issue()
 			//std::cout << "Inside isMem\n";
 		}
 		success = true;
+
+		// Only increment PC if the issue was successful
+		PC++;
 	}
-	
-	PC++;
+
 	return success;
 }
 
@@ -408,8 +435,27 @@ bool Tomasulo::execute()
 		}
 		else if (timingDiagram[h*numCol + 0].isMem == true)
 		{
-			//yes = true;
 			unaddressedDeps = memRS->hasUnaddressedDependencies(robSpot);
+			
+			// For stores, also check if the data value is ready
+			inst &ins = instruction[h];
+			if (ins.opcode == store && !unaddressedDeps)
+			{
+				// Check if the data register (rs for stores) is ready
+				int floatDependency = 1;
+				int dataRegID = ins.rs.id;
+				int dataDep = ROB->findDependency(floatDependency, dataRegID);
+				
+				// Block if there's still a dependency that hasn't been resolved
+				if (dataDep != -1 && dataDep != robSpot)
+				{
+					// Check if that ROB entry has completed writeback
+					if (ROB->table[dataDep].cmt_flag != 1)
+					{
+						unaddressedDeps = true;
+					}
+				}
+			}
 		}
 
 		if (unaddressedDeps == true)
@@ -417,8 +463,8 @@ bool Tomasulo::execute()
 			/*
 			if (yes == true)
 			{
-				std::cout << std::endl << "float failed dependencies" << std::endl;
-				printRS(3);
+				//std::cout << std::endl << "float failed dependencies" << std::endl;
+				//printRS(3);
 				//printRS(2);
 			}
 			*/
@@ -554,117 +600,170 @@ bool Tomasulo::mem()
         int address = static_cast<int>(effectiveAddress);
         
         if (ins.opcode == load)
-        {
-            // Load: Check for store-to-load forwarding first
-            bool forwardedFromStore = false;
-            
-            // Only check forwarding if we haven't started MEM yet
-            if (timingDiagram[h*numCol + 2].startCycle == 0)
-            {
-                // Search for older stores (earlier in program order) that match this address
-                for (size_t i = 0; i < h; ++i)
-                {
-                    inst &prevInst = instruction[i];
-                    
-                    if (prevInst.opcode == store)
-                    {
-                        int prevROBSpot = timingDiagram[i*numCol + 0].numROB;
-                        int prevRSSpot = memRS->findRSFromROB(prevROBSpot);
-                        
-                        // Check if the store has calculated its address
-                        if (prevRSSpot != -1 && 
-                            timingDiagram[i*numCol + 1].endCycle != 0 &&
-                            memRS->getValue(prevRSSpot)->computationDone)
-                        {
-                            float prevAddress = memRS->getValue(prevRSSpot)->computation;
-                            
-                            // If addresses match, forward from the store
-                            if (static_cast<int>(prevAddress) == address)
-                            {
-                                // Forward the store's data value
-                                // The store data is in rs register for stores
-                                int storeDataReg = prevInst.rs.id;
-                                float forwardedValue = FpARF->getValue(storeDataReg);
-                                
-                                // Write forwarded value to ROB
-                                ROB->table[ROBSpot].value = forwardedValue;
-                                
-                                forwardedFromStore = true;
-                                
-                                // Forwarding takes 1 cycle
-                                timingDiagram[h*numCol + 2].startCycle = currentCycle;
-                                timingDiagram[h*numCol + 2].endCycle = currentCycle;
-                                timingDiagram[h*numCol + 0].stepThisCycle = true;
-                                
-                                // Clear the load from memRS
-                                memRS->clearLocation(RSSpot);
-                                
-                                success = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-            
-            // If no forwarding, access memory like normal
-            if (!forwardedFromStore)
-            {
-                //std::cout << std::endl << "Made it into access memory step" << std::endl;
+		{
+			bool forwardedFromStore = false;
+			bool foundMatchingStore = false;
+			
+			int mostRecentMatchingStore = -1;
+			float mostRecentForwardedValue = 0.0f;
+			
+			// Search all older stores to find the most recent match. We want to forward the most recent store.
+			// This accounts for the edge case where multiple stores write to the same location back-to-back.
+			for (size_t i = 0; i < h; ++i)
+			{
+				inst &prevInst = instruction[i];
+				
+				if (prevInst.opcode == store)
+				{
+					// Get the previous ROB and RS spots
+					int prevROBSpot = timingDiagram[i*numCol + 0].numROB;
+					int prevRSSpot = memRS->findRSFromROB(prevROBSpot);
+					
+					if (prevRSSpot != -1 && 
+						timingDiagram[i*numCol + 1].endCycle != 0 &&
+						memRS->getValue(prevRSSpot)->computationDone)
+					{
+						float prevAddress = memRS->getValue(prevRSSpot)->computation;
+						
+						if (static_cast<int>(prevAddress) == address)
+						{
+							foundMatchingStore = true;
+							
+							// Check if data is ready
+							int storeDataReg = prevInst.rs.id;
+							int floatDependency = 1;
+							int storeDataDep = ROB->findDependency(floatDependency, storeDataReg);
+							
+							bool dataReady = false;
+							float forwardedValue = 0.0f;
+							
+							if (storeDataDep != -1)
+							{
+								if (ROB->table[storeDataDep].cmt_flag == 1)
+								{
+									forwardedValue = ROB->table[storeDataDep].value;
+									dataReady = true;
+								}
+							}
+							else
+							{
+								forwardedValue = FpARF->getValue(storeDataReg);
+								dataReady = true;
+							}
+							
+							if (dataReady)
+							{
+								// Update based on the most recent forwarded match
+								mostRecentMatchingStore = i;
+								mostRecentForwardedValue = forwardedValue;
+							}
+						}
+					}
+				}
+			}
+			
+			// After checking all stores, forward from the most recent one
+			if (mostRecentMatchingStore != -1)
+			{
+				//std::cout << "Forwarding from store #" << (mostRecentMatchingStore + 1) << std::endl;
+				//std::cout << "  forwardedValue: " << mostRecentForwardedValue << std::endl;
+				
+				ROB->table[ROBSpot].value = mostRecentForwardedValue;
+				forwardedFromStore = true;
+				
+				timingDiagram[h*numCol + 2].startCycle = currentCycle;
+				timingDiagram[h*numCol + 2].endCycle = currentCycle;
+				timingDiagram[h*numCol + 0].stepThisCycle = true;
+				
+				// If we had reserved the memory bus earlier but are now forwarding, release it
+				// This handles the case where load started memory access before store's address was ready
+				// Memory bus becomes free next cycle (forwarding takes 1 cycle)
+				memoryBusFreeAtCycle = currentCycle + 1;
 
-                // Check if we've already started memory access
-                if (timingDiagram[h*numCol + 2].startCycle == 0)
-                {
-                    // Start memory access at this cycle
-                    timingDiagram[h*numCol + 2].startCycle = currentCycle;
-                }
-                
-                // Check if memory access is complete
-                if ((currentCycle - timingDiagram[h*numCol + 2].startCycle + 1) >= numMemLoadStore)
-                {
-                    //std::cout << std::endl << "Memory access complete - read value from memory" << std::endl;
+				memRS->clearLocation(RSSpot);
+				success = true;
+			}
+			
+			// If no forwarding happened and no matching store was found, access memory
+			if (!forwardedFromStore && !foundMatchingStore)
+			{
+				// No matching store found - access memory normally
+				
+				// Check if we need to start memory access
+				if (timingDiagram[h*numCol + 2].startCycle == 0)
+				{
+					// Check if single-ported memory bus is available before starting
+					if (currentCycle >= memoryBusFreeAtCycle)
+					{
+						// Start memory access
+						timingDiagram[h*numCol + 2].startCycle = currentCycle;
 
-                    // Memory access complete - read value from memory
-                    float memValue = 0.0f;
-                    
-                    // Search for the address in memory vector
-                    for (const auto &memEntry : *memory)
-                    {
-                        if (memEntry.first == address)
-                        {
-                            memValue = memEntry.second;
-                            break;
-                        }
-                    }
-                    
-                    // Write value to ROB
-                    ROB->table[ROBSpot].value = memValue;
-                    
-                    timingDiagram[h*numCol + 2].endCycle = currentCycle;
-                    timingDiagram[h*numCol + 0].stepThisCycle = true;
-                    
-                    // Clear the load from memRS (loads can be cleared after MEM stage)
-                    memRS->clearLocation(RSSpot);
-                    
-                    success = true;
-                }
-            }
-        }
-        else if (ins.opcode == store)
-        {
-            // Store: Record that MEM stage has happened
-            // Stores don't write to memory until commit stage, but we need to record the MEM cycle for the table
-            timingDiagram[h*numCol + 2].startCycle = currentCycle;
-            timingDiagram[h*numCol + 2].endCycle = currentCycle;
-            timingDiagram[h*numCol + 0].stepThisCycle = true;
-            
-            // Store the address in ROB for later use in commit
-            ROB->table[ROBSpot].value = effectiveAddress;
-            
-            // Note: Don't clear memRS for stores yet (they stay until commit stage)
-            
-            success = true;
-        }
+						// Reserve memory bus
+						memoryBusFreeAtCycle = currentCycle + numMemLoadStore;
+
+						//std::cout << ">>> Cycle " << currentCycle << ": Load #" << (h+1) << " reserving memory bus until cycle " << memoryBusFreeAtCycle << std::endl;
+					}
+					else
+					{
+						// Do nothing -- wait for memory bus to become available
+					}
+				}
+				else
+				{
+					// Memory access already in progress - check if complete
+					// (This runs regardless of memoryBusFreeAtCycle)
+					if ((currentCycle - timingDiagram[h*numCol + 2].startCycle + 1) >= numMemLoadStore)
+					{
+						// Memory access complete - read value from memory
+						float memValue = 0.0f;
+						
+						// Search for the address in memory vector
+						for (const auto &memEntry : *memory)
+						{
+							if (memEntry.first == address)
+							{
+								memValue = memEntry.second;
+								break;
+							}
+						}
+						
+						// Write value to ROB
+						ROB->table[ROBSpot].value = memValue;
+						
+						timingDiagram[h*numCol + 2].endCycle = currentCycle;
+						timingDiagram[h*numCol + 0].stepThisCycle = true;
+						
+						// Clear the load from memRS
+						memRS->clearLocation(RSSpot);
+						
+						success = true;
+					}
+				}
+			}
+		}
+		else if (ins.opcode == store)
+		{
+			// Stores skip the MEM stage entirely
+			
+			// Only process if we haven't set the ROB value yet
+			if (timingDiagram[h*numCol + 2].startCycle == 0)
+			{
+				// Store the address in ROB for later use in commit
+				ROB->table[ROBSpot].value = effectiveAddress;
+				
+				// Mark MEM as "done" so this store doesn't keep entering mem() every cycle. Use 0,0 to indicate skipped.
+				// This special handling is necessary because it will otherwise hold up the rest of the instructions
+				// since we use the timing table for sequencing most things.
+				timingDiagram[h*numCol + 2].startCycle = -1;  // Use -1 to indicate "processed but skipped"
+				timingDiagram[h*numCol + 2].endCycle = -1;
+				
+				success = true;
+			}
+			else
+			{
+				// Do nothing -- if already processed, just skip this store
+			}
+		}
         
         // Only process one instruction per cycle
         break;
@@ -792,8 +891,8 @@ bool Tomasulo::wb()
 				}
 				else if (ins.opcode == store)
 				{
-					// Store just marks ready to commit
-					ROB->table[ROBSpot].cmt_flag = 1;
+					// Stores skip WB stage, they go straight to commit
+					continue;
 				}
 			}
 			
@@ -801,7 +900,8 @@ bool Tomasulo::wb()
 			addiRS->replaceROBDependency(ROBSpot, static_cast<int>(ROB->table[ROBSpot].value));
 			addfRS->replaceROBDependency(ROBSpot, static_cast<float>(ROB->table[ROBSpot].value));
 			mulfRS->replaceROBDependency(ROBSpot, static_cast<float>(ROB->table[ROBSpot].value));
-		
+			memRS->replaceROBDependency(ROBSpot, static_cast<float>(ROB->table[ROBSpot].value));
+
 			timingDiagram[h*numCol + 3].startCycle = currentCycle; timingDiagram[h*numCol + 3].endCycle = currentCycle;
 			timingDiagram[h*numCol + 0].stepThisCycle = true;
 
@@ -820,47 +920,26 @@ bool Tomasulo::commit()
 	//std::cout << "Commit cycle: " << currentCycle << std::endl;
 
 	// Commit an instruction when it is the oldest in the ROB (ROB head points to it) and the ready/finished bit is set.
-	// Note: we can only commit 1 instruction per cycle.
-	// If store instructions --> write into memory
+	// Note: we can only commit 1 instruction per cycle EXCEPT stores take multiple cycles but don't block other commits.
+	// If store instructions --> write into memory (takes multiple cycles, doesn't block)
 	// If other instruction --> write to ARF
 	// Free ROB entry and update RAT (clear aliases). Advance ROB head to the next instruction.
 	// Mark instruction as committed (record commit cycle for table).
 
-	int ROBSpot;
-	for (size_t h = 0; h < numberInstructions; ++h) 
+	// First, check if a store commit is in progress
+	if (storeCommitInProgress != -1)
 	{
-		//std::cout << "Instr number: " << h << std::endl;
-		//// std::cout << "one\n";
-
-		ROBSpot = timingDiagram[h*numCol + 0].numROB;
-
-		//// std::cout << "two\n";
+		inst &storeInst = instruction[storeCommitInstrIndex];
 		
-		//int ableToCommit = 0;
-		//// std::cout << ROBSpot << std::endl;
-		//printROB();
-		//if (ROB->ableToCommit(ROBSpot) == true)
-		//{
-		//	ableToCommit = true;
-		//}
-
-		//// std::cout << "Able to commit: " << ableToCommit << std::endl;
-
-		if (!((timingDiagram[h*numCol + 3].endCycle != 0) && (timingDiagram[h*numCol + 4].startCycle == 0) 
-				&& (timingDiagram[h*numCol + 0].stepThisCycle == false) && (ROB->ableToCommit(ROBSpot) == true)))
+		// Check if the store has finished its memory write (takes numMemLoadStore cycles)
+		if ((currentCycle - storeCommitStartCycle + 1) >= numMemLoadStore)
 		{
-			continue;
-		}
-		
-		//// std::cout << "three\n";
-		
-		// Check if this is a store instruction
-		inst &ins = instruction[h];
-		if (ins.opcode == store)
-		{
-			// Write to memory
+			// Store commit is complete
+			int ROBSpot = storeCommitInProgress;
+			
+			// Write to memory now (at the end of the multi-cycle commit)
 			int address = static_cast<int>(ROB->table[ROBSpot].value); // Address was stored in ROB
-			float storeValue = FpARF->getValue(ins.rs.id); // Get data from register
+			float storeValue = FpARF->getValue(storeInst.rs.id); // Get data from register
 			
 			// Officially commit by updating the memory vector
 			bool found = false;
@@ -880,41 +959,214 @@ bool Tomasulo::commit()
 				memory->push_back(std::make_pair(address, storeValue));
 			}
 			
-			// *Now* we can clear the store from memRS
+			// Clear the store from memRS
 			int RSSpot = memRS->findRSFromROB(ROBSpot);
 			if (RSSpot != -1)
 			{
 				memRS->clearLocation(RSSpot);
 			}
-		}
-		
-		commitReturn robCommit = ROB->commit(ROBSpot);
+			
+			// Commit the store from ROB
+			ROB->commit(ROBSpot);
+			
+			// Mark commit complete in timing diagram
+			timingDiagram[storeCommitInstrIndex*numCol + 4].endCycle = currentCycle;
+			
+			// Now that we've committed, the memory bus will be free at the next cycle
+			memoryBusFreeAtCycle = currentCycle + 1;
+			
+			// Clear the store commit tracking
+			storeCommitInProgress = -1;
+			storeCommitStartCycle = 0;
+			storeCommitInstrIndex = -1;
+			
+			success = true;
 
-		int regLocation;
-		if (robCommit.regType == 0)
+			// If store has finished memory write, return now
+			return success;
+		}
+		else
 		{
-			regLocation = IntRAT->getNextARFLocation(ROBSpot);
-			while(regLocation != -1)
+			// Store is still committing, but we can commit other instructions in parallel
+		}
+	}
+
+	// Try to commit the next ready instruction (even if store is in progress)
+	int ROBSpot;
+	for (size_t h = 0; h < numberInstructions; ++h) 
+	{
+		// Skip if this instruction already committed
+		if (timingDiagram[h*numCol + 4].endCycle != 0)
+		{
+			continue;
+		}
+		
+		ROBSpot = timingDiagram[h*numCol + 0].numROB;
+
+		//std::cout << "\nCycle " << currentCycle << ": Checking if instr #" << (h+1) << " can commit (ROB spot " << ROBSpot << ")" << std::endl;
+
+		inst &ins = instruction[h];
+		
+		// Determine if instruction can commit
+		bool canCommit = false;
+		
+		if (ins.opcode == store)
+		{
+
+			/*
+			std::cout << "\nCycle " << currentCycle << ": Checking store (instr #" << (h+1) << ")" << std::endl;
+			std::cout << "  EX endCycle: " << timingDiagram[h*numCol + 1].endCycle << std::endl;
+			std::cout << "  storeCommitInProgress: " << storeCommitInProgress << std::endl;
+			std::cout << "  currentCycle >= memoryBusFreeAtCycle: " << currentCycle << " >= " << memoryBusFreeAtCycle << std::endl;
+			std::cout << "  stepThisCycle: " << timingDiagram[h*numCol + 0].stepThisCycle << std::endl;
+			*/
+
+
+			// Store can commit if:
+			// 1. EX stage is done
+			// 2. No store is currently committing
+			// 3. Data dependency is resolved
+			// 4. It's the oldest non-committed instruction (program order)
+			if (timingDiagram[h*numCol + 1].endCycle != 0 &&
+				storeCommitInProgress == -1 &&
+				currentCycle >= memoryBusFreeAtCycle &&
+				timingDiagram[h*numCol + 0].stepThisCycle == false)
 			{
-				IntARF->changeValue(regLocation, static_cast<int>(robCommit.returnValue));
+				// Check if all earlier instructions have committed
+				bool allEarlierCommitted = true;
+				for (size_t i = 0; i < h; i++)
+				{
+					if (timingDiagram[i*numCol + 4].endCycle == 0)
+					{
+						allEarlierCommitted = false;
+						//std::cout << "  Earlier instr #" << (i+1) << " not committed yet" << std::endl;
+						break;
+					}
+				}
+				//std::cout << "  allEarlierCommitted: " << allEarlierCommitted << std::endl;
+
+				if (allEarlierCommitted)
+				{
+					// Check if data is ready
+					int floatDependency = 1;
+					int dataRegID = ins.rs.id;
+					int dataDep = ROB->findDependency(floatDependency, dataRegID);
+					
+					/*
+					std::cout << "  dataDep: " << dataDep << std::endl;
+					if (dataDep != -1)
+					{
+						std::cout << "  ROB[" << dataDep << "].cmt_flag: " << ROB->table[dataDep].cmt_flag << std::endl;
+					}
+					*/
+
+					if (dataDep == -1 || ROB->table[dataDep].cmt_flag == 1)
+					{
+						canCommit = true;
+						//std::cout << "  >>> Store can commit!" << std::endl;
+					}
+				}
+			}
+		}
+		else
+		{
+			// Non-store instruction can commit if WB is done and it's oldest
+			if (timingDiagram[h*numCol + 3].endCycle != 0 &&
+				timingDiagram[h*numCol + 0].stepThisCycle == false)
+			{
+				// Check if all earlier instructions have committed
+				bool allEarlierCommitted = true;
+				for (size_t i = 0; i < h; i++)
+				{
+					if (timingDiagram[i*numCol + 4].endCycle == 0)
+					{
+						allEarlierCommitted = false;
+						break;
+					}
+				}
+				
+				if (allEarlierCommitted)
+				{
+					canCommit = true;
+				}
+			}
+		}
+		
+		if (!canCommit)
+		{
+			continue;
+		}
+		
+		// Commit this instruction
+		if (ins.opcode == store)
+		{
+			// Start multi-cycle store commit
+			storeCommitInProgress = ROBSpot;
+			storeCommitStartCycle = currentCycle;
+			storeCommitInstrIndex = h;
+			
+			// Mark start of commit in timing diagram
+			timingDiagram[h*numCol + 4].startCycle = currentCycle;
+			// endCycle will be set when store finishes
+			
+			success = true;
+			break;
+		}
+		else
+		{
+			// Regular, non-store instructions commit in one cycle
+			commitReturn robCommit = ROB->commit(ROBSpot);
+
+			/*
+			std::cout << "\nCommitting instr #" << (h+1) << " at cycle " << currentCycle << std::endl;
+			std::cout << "  regType: " << robCommit.regType << std::endl;
+			std::cout << "  registerNum: " << robCommit.registerNum << std::endl;
+			std::cout << "  returnValue: " << robCommit.returnValue << std::endl;
+			*/
+
+			int regLocation;
+			if (robCommit.regType == 0)
+			{
 				regLocation = IntRAT->getNextARFLocation(ROBSpot);
+				while(regLocation != -1)
+				{
+					IntARF->changeValue(regLocation, static_cast<int>(robCommit.returnValue));
+					regLocation = IntRAT->getNextARFLocation(ROBSpot);
+				}
 			}
-		}
-		else if (robCommit.regType == 1)
-		{
-			regLocation = FpRAT->getNextARFLocation(ROBSpot);
-			while(regLocation != -1)
+			else if (robCommit.regType == 1)
 			{
-				FpARF->changeValue(regLocation, robCommit.returnValue);
 				regLocation = FpRAT->getNextARFLocation(ROBSpot);
+
+				/*
+				std::cout << "\nCommitting float result:" << std::endl;
+				std::cout << "  ROB spot: " << ROBSpot << std::endl;
+				std::cout << "  Value: " << robCommit.returnValue << std::endl;
+				std::cout << "  Dest register: F" << robCommit.registerNum << std::endl;
+				std::cout << "  RAT lookup returned: " << regLocation << std::endl;
+				*/
+
+				while (regLocation != -1)
+				{
+					//std::cout << "  Writing " << robCommit.returnValue << " to F" << regLocation << std::endl;
+					FpARF->changeValue(regLocation, robCommit.returnValue);
+					regLocation = FpRAT->getNextARFLocation(ROBSpot);
+				}
 			}
+			else if (robCommit.regType == -2)
+			{
+				// This section is intentionally blank
+				// For store instructions we set regType to -2 since no register write is needed. We can't
+				// use -1 since that indicates that a location is free.
+			}
+
+			// Regular, non-store instructions commit in one cycle
+			timingDiagram[h*numCol + 4].startCycle = currentCycle;
+			timingDiagram[h*numCol + 4].endCycle = currentCycle;
+			
+			success = true;
+			break;
 		}
-		
-		timingDiagram[h*numCol + 4].startCycle = currentCycle;
-		timingDiagram[h*numCol + 4].endCycle = currentCycle;
-		
-		success = true;
-		break;
 	}
 
 	return success;
@@ -1073,20 +1325,32 @@ void Tomasulo::printRS(int select) // 0 = addiRS, 1 = addfRS, mulfRS = 2
 	
 void Tomasulo::printOutTimingTable()
 {
-	std::cout << "\n-----------------------------------------------\n";
-	std::cout << "Timing table:\n";
-	std::cout << "\t\tISSUE\tEX\tMEM\tWB\tCOMMIT\n";
+    std::cout << "\n-----------------------------------------------\n";
+    std::cout << "Timing table:\n";
+    std::cout << "\t\tISSUE\tEX\tMEM\tWB\tCOMMIT\n";
 
-
-	for (int i = 0; i < numRow; i++)
-	{
-		std::cout << "Instr #" << (i+1) << ":\t";
-		for (int j = 0; j < numCol; j++)
-		{
-			std::cout << timingDiagram[i*numCol+j].startCycle << "," << timingDiagram[i*numCol+j].endCycle << "\t";
-		}
-		std::cout << std::endl;
-	}
+    for (int i = 0; i < numRow; i++)
+    {
+        std::cout << "Instr #" << (i+1) << ":\t";
+        for (int j = 0; j < numCol; j++)
+        {
+            int start = timingDiagram[i*numCol+j].startCycle;
+            int end = timingDiagram[i*numCol+j].endCycle;
+            
+            // Display -1,-1 as 0,0 (for skipped stages like store MEM/WB)
+            if (start == -1)
+			{
+				start = 0;
+			}
+            if (end == -1)
+			{
+				end = 0;
+			}
+            
+            std::cout << start << "," << end << "\t";
+        }
+        std::cout << std::endl;
+    }
 }
 
 void Tomasulo::printOutput()
@@ -1109,4 +1373,16 @@ bool Tomasulo::fullAlgorithm()
 	currentCycle++;
 	
 	return 1;
+}
+
+bool Tomasulo::allInstructionsCommitted()
+{
+    for (int i = 0; i < numberInstructions; i++)
+    {
+        if (timingDiagram[i*numCol + 4].endCycle == 0)
+        {
+            return false;
+        }
+    }
+    return true;
 }

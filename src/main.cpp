@@ -62,14 +62,6 @@ int main()
 	
 	ROB    = new ReOrderBuf(parser.num_ROB);
 	
-
-
-	// I'm not sure if the CDB should be int or float...?
-    //CDB<int> intCDB(parser.num_CDB_buf);
-    //CDB<float> floatCDB(parser.num_CDB_buf);
-
-
-
 	std::cout << "Begin Tomasulo algorithm..." << std::endl;
 
 	Tomasulo *Tommy;
@@ -77,10 +69,23 @@ int main()
 		parser.cycle_mem_exe, parser.cycle_mem_mem, parser.num_CDB_buf, IntARF, FpARF, addiRS, addfRS, mulfRS,
 		memRS, IntRAT, FpRAT, ROB, parser.instruction, &parser.memory);
 
-	// Run the Tomasulo algorithm
-	for (int i = 0; i < 25; i++) // TODO: Dynamically set the total number of iterations? Or, just make this a parameter.
+	int maxCycles = 1000; // Limit of 1000 cycles for safety
+	int cycleCount = 0;
+	
+	// Run the Tomasulo algorithm until all instructions have committed
+	while (!Tommy->allInstructionsCommitted() && cycleCount < maxCycles)
 	{
 		Tommy->fullAlgorithm();
+		cycleCount++;
+	}
+
+	if (cycleCount >= maxCycles)
+	{
+		std::cout << "\nWarning: Reached maximum cycle limit (" << maxCycles << ").\n";
+	}
+	else
+	{
+		std::cout << "\nAll instructions committed after " << cycleCount << " cycles.\n";
 	}
 
 	//Tommy->printRAT(false);
