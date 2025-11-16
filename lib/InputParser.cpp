@@ -346,49 +346,49 @@ void InputParser::parse(const std::string &filename)
 		
 
         // Decode instruction and store all of the values that were read into the appropriate fields
-        if (op == "Add")
+        if (op == "Add" || op == "add" || op == "ADD")
         {
             itmp.opcode = add;
             itmp.rd.id = stoi(words[1] + 1);
             itmp.rs.id = stoi(words[2] + 1);
             itmp.rt.id = stoi(words[3] + 1);
         }
-		else if (op == "Addi")
+		else if (op == "Addi" || op == "addi" || op == "ADDI")
 		{
 			itmp.opcode = addi;
             itmp.rd.id = stoi(words[1] + 1);
             itmp.rs.id = stoi(words[2] + 1);
             itmp.immediate = stoi(words[3] + 1);
 		}
-        else if (op == "Sub")
+        else if (op == "Sub" || op == "sub" || op == "SUB")
         {
             itmp.opcode = sub;
             itmp.rd.id = stoi(words[1] + 1);
             itmp.rs.id = stoi(words[2] + 1);
             itmp.rt.id = stoi(words[3] + 1);
         }
-        else if (op == "Add.d")
+        else if (op == "Add.d" || op == "add.d" || op == "ADD.D")
         {
             itmp.opcode = addf;
             itmp.rd.id = stoi(words[1] + 1);
             itmp.rs.id = stoi(words[2] + 1);
             itmp.rt.id = stoi(words[3] + 1);
         }
-        else if (op == "Sub.d")
+        else if (op == "Sub.d" || op == "sub.d" || op == "SUB.D")
         {
             itmp.opcode = subf;
             itmp.rd.id = stoi(words[1] + 1);
             itmp.rs.id = stoi(words[2] + 1);
             itmp.rt.id = stoi(words[3] + 1);
         }
-        else if (op == "Mult.d")
+        else if (op == "Mult.d" || op == "mult.d" || op == "MULT.D")
         {
             itmp.opcode = mulf;
             itmp.rd.id = stoi(words[1] + 1);
             itmp.rs.id = stoi(words[2] + 1);
             itmp.rt.id = stoi(words[3] + 1);
         }
-        else if (op == "Ld")
+        else if (op == "Ld" || op == "ld" || op == "LD")
         {
             itmp.opcode = load;
             itmp.rt.imme_flag = true;
@@ -396,7 +396,7 @@ void InputParser::parse(const std::string &filename)
             itmp.rt.value = atof(words[2]);
             itmp.rs.id = stoi(words[3] + 1);
         }
-        else if (op == "Sd")
+        else if (op == "Sd" || op == "sd" || op == "SD")
         {
             itmp.opcode = store;
             itmp.rs.id = stoi(words[1] + 1);
@@ -404,19 +404,23 @@ void InputParser::parse(const std::string &filename)
             itmp.rd.id = stoi(words[3] + 1);
             itmp.rt.imme_flag = true;
         }
-        else if (op == "Beq")
+        else if (op == "Beq" || op == "beq" || op == "BEQ")
         {
             itmp.opcode = beq;
             itmp.rs.id = stoi(words[1] + 1);
             itmp.rt.id = stoi(words[2] + 1);
             itmp.rt.value = atof(words[3]);
         }
-        else if (op == "Bne")
+        else if (op == "Bne" || op == "bne" || op == "BNE")
         {
             itmp.opcode = bne;
             itmp.rs.id = stoi(words[1] + 1);
             itmp.rt.id = stoi(words[2] + 1);
             itmp.rt.value = atof(words[3]);
+        }
+        else if (op == "Nop" || op == "nop" || op == "NOP")
+        {
+            itmp.opcode = nop;
         }
         else
         {
@@ -521,6 +525,9 @@ void InputParser::parse(const std::string &filename)
                     break;
                 case bne:
                     std::cout << "Bne R" << it.rs.id << ", R" << it.rt.id << ", " << it.rt.value;
+                    break;
+                case nop:
+                    std::cout << "NOP";
                     break;
                 default:
                     std::cout << "(Unknown opcode: " << it.name << ")";
