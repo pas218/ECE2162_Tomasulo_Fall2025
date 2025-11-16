@@ -21,6 +21,7 @@ struct timing_type{
 	bool fpMult;
 	bool isMem;
 	bool isBranch;
+	bool isNop;
 	bool stepThisCycle;
 };
 

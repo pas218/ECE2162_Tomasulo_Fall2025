@@ -100,9 +100,13 @@ bool Tomasulo::issue()
 	{
 		operationType = 4;
 	}
-	else
+	else if (ins.opcode == nop)
 	{
 		operationType = 5;
+	}
+	else
+	{
+		operationType = 5; // Default to NOP if unknown
 	}
 	
 	
@@ -137,15 +141,17 @@ bool Tomasulo::issue()
 	}
 	else
 	{
-		// NOP.
+		// operationType == 5, NOP doesn't need RS
+		freeRSSpot = 0;
 	}
 	
 	// SECTION 2: ACTUALLY PERFORM ISSUE, ASSUMING THERE IS VIABILITY
 	
 	// Write to the ROB, RS, RAT, and timing table.
 	// operationType: 0 = int add/subtract, 1 = Fp add/subtract, 2 = fp mult, 3 = Memory, 4 = Branch, 5 = NOP
+	// Check for structure hazards for RS and ROB. Also, NOP instructions need ROB but not RS.
 	int freeROBSpot = ROB->freeSpot();
-	if (freeRSSpot != -1 && freeROBSpot != -1) // Structure hazards
+	if ((operationType == 5 || freeRSSpot != -1) && freeROBSpot != -1)
 	{
 		// ROB.
 		if (operationType == 0)
@@ -168,13 +174,20 @@ bool Tomasulo::issue()
 			}
 			else if (ins.opcode == store)
 			{
-				// Use -2 to indicate "in use (so don't reuse) but there's no destination register".
+				// Use -2 to indicate: "in use (so don't reuse) but there's no destination register".
 				// This is because stores don't have a destination register and must be handled in a special way.
 				ROB->table[freeROBSpot].id = -2;     
 				ROB->table[freeROBSpot].dst_id = -1;
 			}
 		}
-		
+		else if (operationType == 5)
+		{
+			// NOP: Mark as used but no destination
+			// Use -2 to indicate: "in use (so don't reuse) but there's no destination register".
+			ROB->table[freeROBSpot].id = -2;
+			ROB->table[freeROBSpot].dst_id = -1;
+		}
+
 		// RS.
 		if (operationType == 0)
 		{
@@ -388,6 +401,10 @@ bool Tomasulo::issue()
 
 			//std::cout << "Inside isMem\n";
 		}
+		else if (operationType == 5)
+		{
+			timingDiagram[PC*numCol + 0].isNop = true;
+		}
 		success = true;
 
 		// Only increment PC if the issue was successful
@@ -456,6 +473,11 @@ bool Tomasulo::execute()
 					}
 				}
 			}
+		}
+		else if (timingDiagram[h*numCol + 0].isNop == true)
+		{
+			// NOP has no dependencies
+			unaddressedDeps = false;
 		}
 
 		if (unaddressedDeps == true)
@@ -544,6 +566,15 @@ bool Tomasulo::execute()
 				{
 					memRS->compute(RSSpot); // This calculates address = base + offset
 				}
+			}
+		}
+		else if (timingDiagram[h*numCol + 0].isNop == true)
+		{
+			// NOP executes in 1 cycle
+			if ((currentCycle - timingDiagram[h*numCol + 1].startCycle + 1) >= 1)
+			{
+				timingDiagram[h*numCol + 1].endCycle = currentCycle;
+				timingDiagram[h*numCol + 0].stepThisCycle = true;
 			}
 		}
 
@@ -895,7 +926,11 @@ bool Tomasulo::wb()
 					continue;
 				}
 			}
-			
+			else if (timingDiagram[h*numCol + 0].isNop == true)
+			{
+				// NOP finishes WB in one cycle and doesn't writeback anything
+				ROB->table[ROBSpot].cmt_flag = 1;
+			}
 			
 			addiRS->replaceROBDependency(ROBSpot, static_cast<int>(ROB->table[ROBSpot].value));
 			addfRS->replaceROBDependency(ROBSpot, static_cast<float>(ROB->table[ROBSpot].value));
