@@ -28,8 +28,21 @@ std::vector<inst> instruction;
 
 
 
-int main()
+int main(int argc, char *argv[])
 {
+	// Find input filepath.
+	std::string filepath;
+	if (argc == 2)
+	{
+		std::cout << "File path provided. Using path: " << argv[1] << std::endl;
+		filepath = argv[1];
+	}
+	else
+	{
+		std::cout << "NOTE: No file path provided. Using default file path: src/input.txt.\n";
+		filepath = "src/input.txt";
+	}	
+	
 	ARF<int> *IntARF;
 	ARF<float> *FpARF;
 	RAT<int> *IntRAT;
@@ -48,7 +61,7 @@ int main()
 	InputParser parser(numARF);
 
     // Parse the input.txt file and print the input configuration that has been read
-    parser.parse("src\\input.txt");
+    parser.parse(filepath);
 	
 	IntARF = new ARF<int>(parser.intARFValues);
     FpARF  = new ARF<float>(parser.floatARFValues);
@@ -69,6 +82,7 @@ int main()
 		parser.cycle_mem_exe, parser.cycle_mem_mem, parser.num_CDB_buf, IntARF, FpARF, addiRS, addfRS, mulfRS,
 		memRS, IntRAT, FpRAT, ROB, parser.instruction, &parser.memory);
 
+/*
 	int maxCycles = 1000; // Limit of 1000 cycles for safety
 	int cycleCount = 0;
 	
@@ -87,6 +101,12 @@ int main()
 	{
 		std::cout << "\nAll instructions committed after " << cycleCount << " cycles.\n";
 	}
+	*/
+	for (int i = 0; i < 44; i++)
+	{
+		Tommy->fullAlgorithm();
+	}
+	Tommy->trimDiagramEnd();
 
 	//Tommy->printRAT(false);
 	//Tommy->printRAT(true);

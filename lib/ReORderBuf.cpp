@@ -8,6 +8,8 @@ ReOrderBuf::ReOrderBuf(int n)
     head = 0;
     tail = 0;
     table = new ReOrderBuf_entry[size];
+	headPtr = 0;
+	tailPtr = 0;
 	
 	for (int i = 0; i < size; i++)
 	{
@@ -15,6 +17,7 @@ ReOrderBuf::ReOrderBuf(int n)
 		table[i].dst_id   = -1;
 		table[i].value    = 0.0;
 		table[i].cmt_flag = 0;
+		table[i].isBranch = 0;
 	}
 	
 }
@@ -24,10 +27,37 @@ bool ReOrderBuf::full()
 	return n == size ? true : false;
 }
 
+bool ReOrderBuf::flushAfterSpot(int spotNumber)
+{
+	bool returnVal = false;
+	if (headPtr == tailPtr)
+	{
+		//std::cout << "Nothing to flush. The ROB is empty.\n";
+	}
+	else if (headPtr > tailPtr)
+	{
+		for (int i = spotNumber + 1; i < size; i++)
+		{
+			clearSpot(i);
+		}
+		returnVal = true;
+		headPtr = spotNumber + 1;
+	}
+	else if (headPtr < tailPtr)
+	{
+		std::cout << "TODO: [ReOrderBuf::flushAfterSpot]: Need to look at the case where tailPtr < headPtr." << std::endl;
+	}
+	
+	
+	return returnVal;
+}
+
 int ReOrderBuf::findDependency(int depType, int regID)
 {
 	int returnVal = -1;
-	for (int i = 0; i < size; i++)
+	// Bug fix: don't scan for the latest addition to the ROB.
+	// So, you can write instructions like "Add R1, R1, R2" without inducing a self-dependency.
+	for (int i = headPtr-2; i >= 0; i--)
 	{
 		if ((table[i].id == depType) && (table[i].dst_id == regID))
 		{
@@ -43,26 +73,26 @@ bool ReOrderBuf::ableToCommit(int spotNumber)
 	// First make sure that the commit flag is set.
 	bool returnVal = table[spotNumber].cmt_flag == 1 ? true : false;
 
-	// Make sure there are no entries before the one we want to commit.
-	for (int i = spotNumber-1; i >= 0; i--)
-	{	
-		if (table[i].id != -1)
-		{
-			returnVal = false;
-			break;
-		}
+	if (!((returnVal == true) && (spotNumber == tailPtr)))
+	{
+		returnVal = false;
 	}
+	
 	return returnVal;
 }
 commitReturn ReOrderBuf::commit(int spotNumber)
 {
 	commitReturn returnVal;
 
-	returnVal.validCommit = true;
-	returnVal.regType = table[spotNumber].id;
-	returnVal.registerNum = table[spotNumber].dst_id;
-	returnVal.returnValue = table[spotNumber].value;
-	clearSpot(spotNumber);
+	if (spotNumber == tailPtr)
+	{
+		returnVal.validCommit = true;
+		returnVal.regType = table[spotNumber].id;
+		returnVal.registerNum = table[spotNumber].dst_id;
+		returnVal.returnValue = table[spotNumber].value;
+		clearSpot(spotNumber);
+		tailPtr = spotNumber+1;
+	}
 
 	return returnVal;
 }
@@ -70,13 +100,17 @@ commitReturn ReOrderBuf::commit(int spotNumber)
 int ReOrderBuf::freeSpot()
 {
 	int returnVal = -1;
-	for (int i = 0; i < size; i++)
+	if (headPtr == tailPtr)
 	{
-		if (table[i].id == -1)
-		{
-			returnVal = i;
-			break;
-		}
+		returnVal = headPtr;
+	}
+	else if (headPtr > tailPtr)
+	{
+		returnVal = headPtr;
+	}
+	else if (headPtr < tailPtr)
+	{
+		std::cout << "TODO: [ReOrderBuf::commit]: Need to look at the case where tailPtr < headPtr." << std::endl;
 	}
 	return returnVal;
 }
@@ -87,4 +121,14 @@ void ReOrderBuf::clearSpot(int spotNumber)
 	table[spotNumber].dst_id   = -1;
 	table[spotNumber].value    = 0.0;
 	table[spotNumber].cmt_flag = 0;
+	table[spotNumber].isBranch = 0;
+}
+
+void ReOrderBuf::printSpot(int spotNumber)
+{
+	std::cout << "Printing spot: " << spotNumber << std::endl;
+	std::cout << "table[" << spotNumber << "].id = " << table[spotNumber].id << std::endl;
+	std::cout << "table[" << spotNumber << "].dst_id = " << table[spotNumber].dst_id << std::endl;
+	std::cout << "table[" << spotNumber << "].value = " <<  std::to_string(table[spotNumber].value) << std::endl;
+	std::cout << "table[" << spotNumber << "].cmt_flag = " << table[spotNumber].value << std::endl;
 }
