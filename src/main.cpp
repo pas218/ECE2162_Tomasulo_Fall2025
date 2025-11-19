@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
 	
 	addiRS = new RS<int, Ops>(parser.num_addiRS);
 	addfRS = new RS<float, Ops>(parser.num_addfRS);
+	std::cout << "Num multfRS reservation stations: " << parser.num_mulfRS << std::endl;
 	mulfRS = new RS<float, Ops>(parser.num_mulfRS);
 	memRS = new RS<float, Ops>(parser.num_memRS);
 	
@@ -105,6 +106,12 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < 35; i++)
 	{
 		Tommy->fullAlgorithm();
+	}
+	bool returnVal;
+	returnVal = Tommy->fullAlgorithm();
+	while(!returnVal)
+	{
+		returnVal = Tommy->fullAlgorithm();
 	}
 	Tommy->trimDiagramEnd();
 

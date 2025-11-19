@@ -68,14 +68,14 @@ void Tomasulo::addMoreTimingRows(int extraRows)
 
 int Tomasulo::findCheckpointLocation(int timingDiagramRow)
 {
-	std::cout << "Find checkpoint location.\n";
-	std::cout << "timingDiagramRow: " << timingDiagramRow << std::endl;
+	// std::cout << "Find checkpoint location.\n";
+	// std::cout << "timingDiagramRow: " << timingDiagramRow << std::endl;
 	// Remove related to checkpoints.
 	int position = -1;
 	for (int i = 0; i < branchInstrCheckpoints.size(); i++)
 	{
-		std::cout << "Checking index #" << i << std::endl;
-		std::cout << "Vector value at index #" << i << ": " << branchInstrCheckpoints[i] << std::endl;
+		// std::cout << "Checking index #" << i << std::endl;
+		// std::cout << "Vector value at index #" << i << ": " << branchInstrCheckpoints[i] << std::endl;
 		if (branchInstrCheckpoints[i] == timingDiagramRow)
 		{
 			position = i;
@@ -171,9 +171,14 @@ TOMASULO_RETURN Tomasulo::issue()
 	TOMASULO_RETURN success = ERROR;
 	
 	// If the PC counter is higher than the number of instructions, and the last instruction has commited, the program is done.
-	if (PC >= numberInstructions)
+	if ((PC >= numberInstructions) && (timingDiagram[(timingDiagramPointer-1)*numCol+4].endCycle != 0))
 	{
 		success = DONE;
+		return success;
+	}
+	
+	if (PC >= numberInstructions)
+	{
 		return success;
 	}
 	
@@ -251,6 +256,7 @@ TOMASULO_RETURN Tomasulo::issue()
 	{
 		// Floating point multiply.
 		freeRSSpot = mulfRS->freeSpot();
+		//std::cout << "Free mulfRS spot: " << freeRSSpot << "Cycle #" << currentCycle << std::endl;
 	}
 	else if (operationType == 3)
 	{
@@ -507,7 +513,7 @@ TOMASULO_RETURN Tomasulo::issue()
 			
 			regID0 = ins.rs.id;
 			int robDep0 = ROB->findDependency(intDependency, regID0);
-			std::cout << "Found rob dep0: " << robDep0 << std::endl;
+			// std::cout << "Found rob dep0: " << robDep0 << std::endl;
 			if (robDep0 != -1)
 			{
 				addiRS->changeROBDependency0(freeRSSpot, robDep0);
@@ -519,7 +525,7 @@ TOMASULO_RETURN Tomasulo::issue()
 			// Change dependencies/ values 1;
 			regID1 = ins.rt.id;
 			int robDep1 = ROB->findDependency(intDependency, regID1);
-			std::cout << "Found rob dep1: " << robDep1 << std::endl;
+			// std::cout << "Found rob dep1: " << robDep1 << std::endl;
 			if (robDep1 != -1)
 			{
 				addiRS->changeROBDependency1(freeRSSpot, robDep1);
@@ -537,10 +543,10 @@ TOMASULO_RETURN Tomasulo::issue()
 			{
 				btb.changeFullEntry((PC*4) & 0b111, PC+1+static_cast<int>(ins.rt.value), 0, 1);
 			}
-			std::cout << "GETTING TABLE ENTRY!\n";
+			// std::cout << "GETTING TABLE ENTRY!\n";
 			// Get the branch prediction.
 			branchPrediction = btb.getTableEntry((PC*4) & 0b111)->isTaken;
-			std::cout << "PREDICTED: " << (int)branchPrediction << std::endl;
+			// std::cout << "PREDICTED: " << (int)branchPrediction << std::endl;
 			// Add the actual operation into the RS.
 			if (ins.opcode == beq)
 			{
@@ -633,7 +639,7 @@ TOMASULO_RETURN Tomasulo::execute()
 	// This loop is to START execution.
     for (size_t h = 0; h < numRow; ++h) 
 	{  
-		std::cout << "Looking to execute instr #" << h << std::endl;
+		// std::cout << "Looking to execute instr #" << h << std::endl;
 		// Find next instruction that has been issued, but not executed.
 		if (!((timingDiagram[h*numCol + 0].endCycle != 0) && (timingDiagram[h*numCol + 1].startCycle == 0)
 				&& (timingDiagram[h*numCol + 0].stepThisCycle == false)))
@@ -641,13 +647,13 @@ TOMASULO_RETURN Tomasulo::execute()
 			continue;
 		}
 		
-		std::cout << "Starting to execute instr #" << h << std::endl;
-		std::cout << "timingDiagram[h*numCol + 0].isInt: " << (int)timingDiagram[h*numCol + 0].isInt << std::endl;
-		std::cout << "timingDiagram[h*numCol + 0].isBranch: " << (int)timingDiagram[h*numCol + 0].isBranch << std::endl;
-		std::cout << "timingDiagram[h*numCol + 0].fpAdd: " << (int)timingDiagram[h*numCol + 0].fpAdd << std::endl;
-		std::cout << "timingDiagram[h*numCol + 0].fpMult: " << (int)timingDiagram[h*numCol + 0].fpMult << std::endl;
-		std::cout << "timingDiagram[h*numCol + 0].isMem: " << (int)timingDiagram[h*numCol + 0].isMem << std::endl;
-		std::cout << "timingDiagram[h*numCol + 0].isNop: " << (int)timingDiagram[h*numCol + 0].isNop << std::endl;
+		// std::cout << "Starting to execute instr #" << h << std::endl;
+		// std::cout << "timingDiagram[h*numCol + 0].isInt: " << (int)timingDiagram[h*numCol + 0].isInt << std::endl;
+		// std::cout << "timingDiagram[h*numCol + 0].isBranch: " << (int)timingDiagram[h*numCol + 0].isBranch << std::endl;
+		// std::cout << "timingDiagram[h*numCol + 0].fpAdd: " << (int)timingDiagram[h*numCol + 0].fpAdd << std::endl;
+		// std::cout << "timingDiagram[h*numCol + 0].fpMult: " << (int)timingDiagram[h*numCol + 0].fpMult << std::endl;
+		// std::cout << "timingDiagram[h*numCol + 0].isMem: " << (int)timingDiagram[h*numCol + 0].isMem << std::endl;
+		// std::cout << "timingDiagram[h*numCol + 0].isNop: " << (int)timingDiagram[h*numCol + 0].isNop << std::endl;
 		
 		// See if there are any unaddressed dependencies.
 		// Check to see if any of the dependencies have already been written back. In this case, we will have to take directly from the ARF.
@@ -658,7 +664,7 @@ TOMASULO_RETURN Tomasulo::execute()
 		int robSpot = timingDiagram[h*numCol + 0].numROB;
 		if ((timingDiagram[h*numCol + 0].isInt == true) || (timingDiagram[h*numCol + 0].isBranch == true))
 		{
-			std::cout << "Starting int or branch.\n";
+			// std::cout << "Starting int or branch.\n";
 			
 			// If the dependency no longer exists in the ROB, that means it might have already been commited.
 			// Go to the ARF to get those values.
@@ -666,10 +672,10 @@ TOMASULO_RETURN Tomasulo::execute()
 			int dep0 = addiRS->getValue(RSSpot)->robDependency0;
 			int dep1 = addiRS->getValue(RSSpot)->robDependency1;
 			unaddressedDeps = addiRS->hasUnaddressedDependencies(robSpot);
-			std::cout << "RSSpot: " << RSSpot << std::endl;
-			std::cout << "dep0: " << dep0 << std::endl;
-			std::cout << "dep1: " << dep1 << std::endl;
-			std::cout << "unaddressedDeps: " << (int)unaddressedDeps << std::endl;
+			// std::cout << "RSSpot: " << RSSpot << std::endl;
+			// std::cout << "dep0: " << dep0 << std::endl;
+			// std::cout << "dep1: " << dep1 << std::endl;
+			// std::cout << "unaddressedDeps: " << (int)unaddressedDeps << std::endl;
 			
 			if (unaddressedDeps == true)
 			{
@@ -677,13 +683,13 @@ TOMASULO_RETURN Tomasulo::execute()
 				{
 					if (timingDiagram[dep0*numCol + 4].startCycle == 0)
 					{
-						std::cout << "From the CDB.\n";
+						// std::cout << "From the CDB.\n";
 						addiRS->changeRSVal0(RSSpot, static_cast<int>(CDB));
 					}
 					else
 					{
-						std::cout << "From the ARF.\n";
-						std::cout << "timingDiagram[dep0*numCol+0].depID0: " << timingDiagram[dep0*numCol+0].depID0 << std::endl;
+						// std::cout << "From the ARF.\n";
+						// std::cout << "timingDiagram[dep0*numCol+0].depID0: " << timingDiagram[dep0*numCol+0].depID0 << std::endl;
 						addiRS->changeRSVal0(RSSpot, IntARF->getValue(timingDiagram[dep0*numCol+0].depID0));
 					}
 				}
@@ -691,13 +697,13 @@ TOMASULO_RETURN Tomasulo::execute()
 				{
 					if (timingDiagram[dep1*numCol + 4].startCycle == 0)
 					{
-						std::cout << "From the CDB.\n";
+						// std::cout << "From the CDB.\n";
 						addiRS->changeRSVal1(RSSpot, static_cast<int>(CDB));
 					}
 					else
 					{
-						std::cout << "From the ARF.\n";
-						std::cout << "timingDiagram[dep1*numCol+0].depID1: " << timingDiagram[dep1*numCol+0].depID1 << std::endl;
+						// std::cout << "From the ARF.\n";
+						// std::cout << "timingDiagram[dep1*numCol+0].depID1: " << timingDiagram[dep1*numCol+0].depID1 << std::endl;
 						addiRS->changeRSVal1(RSSpot, IntARF->getValue(timingDiagram[dep1*numCol+0].depID1));
 					}
 				}
@@ -708,7 +714,7 @@ TOMASULO_RETURN Tomasulo::execute()
 		}
 		else if (timingDiagram[h*numCol + 0].fpAdd == true)
 		{
-			std::cout << "Starting fp add.\n";
+			// std::cout << "Starting fp add.\n";
 			int RSSpot = addfRS->findRSFromROB(robSpot);
 			int dep0 = addfRS->getValue(RSSpot)->robDependency0;
 			int dep1 = addfRS->getValue(RSSpot)->robDependency1;
@@ -745,7 +751,7 @@ TOMASULO_RETURN Tomasulo::execute()
 		}
 		else if (timingDiagram[h*numCol + 0].fpMult == true)
 		{
-			std::cout << "Starting fp mult.\n";
+			// std::cout << "Starting fp mult.\n";
 			int RSSpot = mulfRS->findRSFromROB(robSpot);
 			int dep0 = mulfRS->getValue(RSSpot)->robDependency0;
 			int dep1 = mulfRS->getValue(RSSpot)->robDependency1;
@@ -903,14 +909,14 @@ TOMASULO_RETURN Tomasulo::execute()
 		}
 		else if (timingDiagram[h*numCol +0].isBranch  == true)
 		{
-    		std::cout << "Starting execution of instruction #" << h << " at cycle " << currentCycle << std::endl;
+    		// std::cout << "Starting execution of instruction #" << h << " at cycle " << currentCycle << std::endl;
 			// Branch (Bne and Beq)
 			if ((currentCycle - timingDiagram[h*numCol + 1].startCycle + 1) >= numExBranch)
 			{
 				timingDiagram[h*numCol + 1].endCycle = currentCycle;
 				timingDiagram[h*numCol + 0].stepThisCycle = true;
 				
-				printRS(0);
+				//printRS(0);
 				// Compute whether branch is actually taken or not.
 				int RSSpot = addiRS->findRSFromROB(robSpot);
 				if (RSSpot != -1)
@@ -918,8 +924,8 @@ TOMASULO_RETURN Tomasulo::execute()
 					addiRS->compute(RSSpot); // This calculates the branch decision
 				}
 			
-				std::cout << "Actual branch value: " << (int)addiRS->getValue(RSSpot)->takeBranch << std::endl;
-				std::cout << "Earlier predicted value: " << (int)btb.getTableEntry((timingDiagram[h*numCol+0].instrNum*4) & 0b111)->isTaken << std::endl;
+				// std::cout << "Actual branch value: " << (int)addiRS->getValue(RSSpot)->takeBranch << std::endl;
+				// std::cout << "Earlier predicted value: " << (int)btb.getTableEntry((timingDiagram[h*numCol+0].instrNum*4) & 0b111)->isTaken << std::endl;
 				// Check if the real branch decision agrees with the predicted.
 				if ((addiRS->getValue(RSSpot)->takeBranch) != (btb.getTableEntry((timingDiagram[h*numCol+0].instrNum*4) & 0b111)->isTaken))
 				{
@@ -927,7 +933,7 @@ TOMASULO_RETURN Tomasulo::execute()
 					misprediction.robSpot          = robSpot;
 
 					btb.changeIsTaken((timingDiagram[h*numCol+0].instrNum*4) & 0b111, 1);
-					std::cout << "Success branch mispredict.\n";
+					// std::cout << "Success branch mispredict.\n";
 					success = BRANCH_MISPREDICT;
 
 				}
@@ -937,7 +943,7 @@ TOMASULO_RETURN Tomasulo::execute()
 		}
 	
 	}
-	std::cout << "Success inside: " << success << std::endl;
+	// std::cout << "Success inside: " << success << std::endl;
 	return success;
 }
 
@@ -1377,13 +1383,13 @@ TOMASULO_RETURN Tomasulo::commit()
 	int ROBSpot;
 	for (size_t h = 0; h < numRow; ++h) 
 	{
-		std::cout << "Looking to commit instr #" << h << std::endl;
+		// std::cout << "Looking to commit instr #" << h << std::endl;
 		// Skip if this instruction already committed
 		if (timingDiagram[h*numCol + 4].endCycle != 0)
 		{
 			continue;
 		}
-		std::cout << "Past first barrier.\n";
+		// std::cout << "Past first barrier.\n";
 		ROBSpot = timingDiagram[h*numCol + 0].numROB;
 
 		//std::cout << "\nCycle " << currentCycle << ": Checking if instr #" << (h+1) << " can commit (ROB spot " << ROBSpot << ")" << std::endl;
@@ -1395,7 +1401,7 @@ TOMASULO_RETURN Tomasulo::commit()
 		
 		if (ins.opcode == store)
 		{
-			std::cout << "Store.\n";
+			// std::cout << "Store.\n";
 			/*
 			std::cout << "\nCycle " << currentCycle << ": Checking store (instr #" << (h+1) << ")" << std::endl;
 			std::cout << "  EX endCycle: " << timingDiagram[h*numCol + 1].endCycle << std::endl;
@@ -1453,33 +1459,33 @@ TOMASULO_RETURN Tomasulo::commit()
 		}
 		else if ((ins.opcode == beq) || (ins.opcode == bne))
 		{
-			std::cout << "branch.\n";
+			// std::cout << "branch.\n";
 			// Check if this instruction has the right commit flag and it is the youngest instruction.
 			if ((timingDiagram[h*numCol + 1].endCycle != 0) && (timingDiagram[h*numCol + 0].stepThisCycle == false) 
 					&& (ROB->ableToCommit(ROBSpot) == true))
 			{
-				std::cout << "Branch can commit.\n";
+				// std::cout << "Branch can commit.\n";
 				canCommit = true;
 			}
 		}
 		else
 		{
-			std::cout << "Commit other instruction.\n";
+			// std::cout << "Commit other instruction.\n";
 			// Non-store instruction can commit if WB is done and it's oldest
-			std::cout << "timingDiagram[h*numCol + 3].endCycle: " << timingDiagram[h*numCol + 3].endCycle << std::endl;
-			std::cout << "timingDiagram[h*numCol + 0].stepThisCycle: " << (int)timingDiagram[h*numCol + 0].stepThisCycle << std::endl;
+			// std::cout << "timingDiagram[h*numCol + 3].endCycle: " << timingDiagram[h*numCol + 3].endCycle << std::endl;
+			// std::cout << "timingDiagram[h*numCol + 0].stepThisCycle: " << (int)timingDiagram[h*numCol + 0].stepThisCycle << std::endl;
 			if ((timingDiagram[h*numCol + 3].endCycle) != 0 &&
 				(timingDiagram[h*numCol + 0].stepThisCycle == false))
 			{
-				std::cout << "Past first if.\n";
+				// std::cout << "Past first if.\n";
 				// Check if all earlier instructions have committed
 				bool allEarlierCommitted = true;
 				for (size_t i = 0; i < h; i++)
 				{
-					std::cout << "Loop #" << i << std::endl;
+					// std::cout << "Loop #" << i << std::endl;
 					if (timingDiagram[i*numCol + 4].endCycle == 0)
 					{
-						std::cout << "Inside second if.\n";
+						// std::cout << "Inside second if.\n";
 						allEarlierCommitted = false;
 						break;
 					}
@@ -1487,7 +1493,7 @@ TOMASULO_RETURN Tomasulo::commit()
 				
 				if (allEarlierCommitted)
 				{
-					std::cout << "Other can commit.\n";
+					// std::cout << "Other can commit.\n";
 					canCommit = true;
 				}
 			}
@@ -1515,7 +1521,7 @@ TOMASULO_RETURN Tomasulo::commit()
 		}
 		else
 		{
-			std::cout << "Commit normal instruction.\n";
+			// std::cout << "Commit normal instruction.\n";
 			// Regular, non-store instructions commit in one cycle
 			commitReturn robCommit = ROB->commit(ROBSpot);
 
@@ -1525,7 +1531,7 @@ TOMASULO_RETURN Tomasulo::commit()
 				regLocation = IntRAT->getNextARFLocation(ROBSpot);
 				if (regLocation == -1)
 				{
-					std::cout << "Changing IntARF location #" << robCommit.registerNum << " with value " << static_cast<int>(robCommit.returnValue) << std::endl;
+					// std::cout << "Changing IntARF location #" << robCommit.registerNum << " with value " << static_cast<int>(robCommit.returnValue) << std::endl;
 					IntARF->changeValue(robCommit.registerNum, static_cast<int>(robCommit.returnValue));
 				}
 				else
@@ -1574,21 +1580,21 @@ TOMASULO_RETURN Tomasulo::commit()
 
 TOMASULO_RETURN Tomasulo::speculationRecovery()
 {
-	std::cout << "speculationRecovery()\n" << std::endl;
+	// std::cout << "speculationRecovery()\n" << std::endl;
 	TOMASULO_RETURN success = ERROR;
 
-	std::cout << "Flush after rob spot.\n";
+	// std::cout << "Flush after rob spot.\n";
 	// Flush the ROB.
 	ROB->flushAfterSpot(misprediction.robSpot);
 
 	// Reinstate the RAT;
-	std::cout << "Recovering the RATs.\n";
+	// std::cout << "Recovering the RATs.\n";
 	int checkpointLocation = findCheckpointLocation(misprediction.timingDiagramRow);
-	std::cout << "Checkpoint location: " << checkpointLocation << std::endl;
+	// std::cout << "Checkpoint location: " << checkpointLocation << std::endl;
 	IntRAT->recoverRAT(IntRATCheckpoints[findCheckpointLocation(misprediction.timingDiagramRow)]);
 	FpRAT->recoverRAT(FloatRATCheckpoints[findCheckpointLocation(misprediction.timingDiagramRow)]);
 
-	std::cout << "Removing everything after prediction.\n";
+	// std::cout << "Removing everything after prediction.\n";
 	// Flush the RAT checkpoints and the timing diagram.
 	predictionRemoveEverythingAfter(misprediction.timingDiagramRow);
 	
@@ -1819,42 +1825,55 @@ void Tomasulo::printOutput()
 
 bool Tomasulo::fullAlgorithm()
 {
+	bool tommyReturn = 0;
 	TOMASULO_RETURN returnVal;
-	std::cout << std::endl;
-	std::cout << "BEFORE:\n";
-	std::cout << "CYVLE NUMBER: " << currentCycle << std::endl;
-	std::cout << "CDB: " << std::to_string(CDB) << std::endl;
-	printRS(0);
-	printRS(1);
-	printBTB();
-	printOutTimingTable();
-	printROB(0, 25);
-	printARF(0);
-	printARF(1);
-	printRAT(0);
+	//std::cout << std::endl;
+	//std::cout << "BEFORE:\n";
+	//std::cout << "CYVLE NUMBER: " << currentCycle << std::endl;
+	//std::cout << "CDB: " << std::to_string(CDB) << std::endl;
+	//printRS(0);
+	//printRS(1);
+	//printBTB();
+	//printOutTimingTable();
+	//printROB(0, 25);
+	//printARF(0);
+	//printARF(1);
+	//printRAT(0);
 	
 	clearSteps();
-	issue();
-	returnVal = execute();
-	std::cout << "Success outside: " << returnVal << std::endl;
-	if (returnVal == BRANCH_MISPREDICT)
+	returnVal = issue();
+	
+	if (returnVal == DONE)
 	{
-		speculationRecovery();
+		tommyReturn = 1;
 	}
-	mem();
-	wb();
-	commit();
+	else
+	{
+		returnVal = execute();
+		//std::cout << "Success outside: " << returnVal << std::endl;
+		if (returnVal == BRANCH_MISPREDICT)
+		{
+			currentCycle++;
+			speculationRecovery();
+		}
+		else
+		{
+			mem();
+			wb();
+			commit();
+		}
+	}
 
 	//printROB();
-	std::cout << "AFTER:\n";
-	std::cout << "CDB: " << std::to_string(CDB) << std::endl;
-	printROB(0, 25);
-	printARF(0);
-	printARF(1);
-	printRAT(0);
+	//std::cout << "AFTER:\n";
+	//std::cout << "CDB: " << std::to_string(CDB) << std::endl;
+	//printROB(0, 25);
+	//printARF(0);
+	//printARF(1);
+	//printRAT(0);
 	currentCycle++;
 	
-	return 1;
+	return tommyReturn;
 }
 
 bool Tomasulo::allInstructionsCommitted()
