@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 		std::cout << "\nAll instructions committed after " << cycleCount << " cycles.\n";
 	}
 	*/
-	for (int i = 0; i < 44; i++)
+	for (int i = 0; i < 35; i++)
 	{
 		Tommy->fullAlgorithm();
 	}

@@ -1825,10 +1825,12 @@ bool Tomasulo::fullAlgorithm()
 	std::cout << "CYVLE NUMBER: " << currentCycle << std::endl;
 	std::cout << "CDB: " << std::to_string(CDB) << std::endl;
 	printRS(0);
+	printRS(1);
 	printBTB();
 	printOutTimingTable();
 	printROB(0, 25);
 	printARF(0);
+	printARF(1);
 	printRAT(0);
 	
 	clearSteps();
@@ -1848,6 +1850,7 @@ bool Tomasulo::fullAlgorithm()
 	std::cout << "CDB: " << std::to_string(CDB) << std::endl;
 	printROB(0, 25);
 	printARF(0);
+	printARF(1);
 	printRAT(0);
 	currentCycle++;
 	
