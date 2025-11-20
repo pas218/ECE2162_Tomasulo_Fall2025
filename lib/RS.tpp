@@ -293,6 +293,7 @@ bool RS<T, Op>::compute(int stationNumber)
 	return returnVal;
 }
 
+
 template <typename T, typename Op>
 bool RS<T, Op>::clearLocation(int stationNumber)
 {

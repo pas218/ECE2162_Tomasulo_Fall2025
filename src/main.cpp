@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
 	
 	ROB    = new ReOrderBuf(parser.num_ROB);
 	
-	std::cout << "Begin Tomasulo algorithm..." << std::endl;
+	//std::cout << "Begin Tomasulo algorithm..." << std::endl;
 
 	Tomasulo *Tommy;
 	Tommy = new Tomasulo(parser.instruction.size(), parser.cycle_addi, parser.cycle_addf, parser.cycle_mulf,
@@ -103,17 +103,17 @@ int main(int argc, char *argv[])
 		std::cout << "\nAll instructions committed after " << cycleCount << " cycles.\n";
 	}
 	*/
-	for (int i = 0; i < 250; i++)
+	/*for (int i = 0; i < 55; i++)
 	{
 		Tommy->fullAlgorithm();
+	}*/
+	bool returnVal;
+	returnVal = Tommy->fullAlgorithm();
+	while(!returnVal)
+	{
+		returnVal = Tommy->fullAlgorithm();
 	}
-	//bool returnVal;
-	//returnVal = Tommy->fullAlgorithm();
-	//while(!returnVal)
-	//{
-	//	returnVal = Tommy->fullAlgorithm();
-	//}
-//	Tommy->trimDiagramEnd();
+	Tommy->trimDiagramEnd();
 
 	//Tommy->printRAT(false);
 	//Tommy->printRAT(true);

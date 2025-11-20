@@ -448,6 +448,9 @@ TOMASULO_RETURN Tomasulo::issue()
 		}
 		else if (operationType == 3)
 		{
+			// std::cout << "operation type 3: " << operationType << std::endl;
+			// std::cout << "freeRSSpot: " << freeRSSpot << std::endl;
+			// std::cout << "freeROBSpot: " << freeROBSpot << std::endl;
 			// Memory operations (Load/Store).
 			memRS->changeROBLocation(freeRSSpot, freeROBSpot);
 			
@@ -577,11 +580,11 @@ TOMASULO_RETURN Tomasulo::issue()
             itmp.rs.id = stoi(words[2] + 1);
             itmp.immediate = stoi(words[3] + 1);
 			*/
-			std::cout << "operationType: " << operationType << std::endl;
-			std::cout << "itmp.opcode: " << ins.opcode << std::endl;
-			std::cout << "itmp.rd.id: " << ins.rd.id << std::endl;
-			std::cout << "itmp.rs.id: " << ins.rs.id << std::endl;
-			std::cout << "itmp.immediate: " << ins.immediate << std::endl;
+			// std::cout << "operationType: " << operationType << std::endl;
+			// std::cout << "itmp.opcode: " << ins.opcode << std::endl;
+			// std::cout << "itmp.rd.id: " << ins.rd.id << std::endl;
+			// std::cout << "itmp.rs.id: " << ins.rs.id << std::endl;
+			// std::cout << "itmp.immediate: " << ins.immediate << std::endl;
 			// Integer add or subtract.
 			addiRS->changeROBLocation(freeRSSpot, freeROBSpot);
 			addiRS->changeOperation(freeRSSpot, physicalOperation);
@@ -603,7 +606,7 @@ TOMASULO_RETURN Tomasulo::issue()
 			
 			// Change the immediate value
 			int trueImmediate = -1*ins.immediate;
-			std::cout << "trueImmediate: " << trueImmediate << std::endl;
+			// std::cout << "trueImmediate: " << trueImmediate << std::endl;
 			addiRS->changeRSVal1(freeRSSpot, ins.immediate*-1);
 			
 			
@@ -846,6 +849,33 @@ TOMASULO_RETURN Tomasulo::execute()
 		}
 		else if (timingDiagram[h*numCol + 0].isMem == true)
 		{
+			int RSSpot = memRS->findRSFromROB(robSpot);
+			int dep0 = memRS->getValue(RSSpot)->robDependency0;
+			int dep1 = memRS->getValue(RSSpot)->robDependency1;
+			unaddressedDeps = memRS->hasUnaddressedDependencies(robSpot);
+			// std::cout << "Timing pointer: " << h << std::endl;
+			// std::cout << "robSpot: " << robSpot << std::endl;
+			// std::cout << "Mem unaddressed dependency: " << unaddressedDeps << std::endl;
+			// std::cout << "RSSpot: " << RSSpot << std::endl;
+			// std::cout << "dep0: " << dep0 << std::endl;
+			// std::cout << "dep1: " << dep1 << std::endl;
+			
+			if (unaddressedDeps == true)
+			{
+				if (ROB->table[dep0].id == -1)
+				{
+					if (timingDiagram[dep0*numCol + 4].startCycle == 0)
+					{
+						memRS->changeRSVal0(RSSpot, CDB);
+					}
+					else
+					{
+						memRS->changeRSVal0(RSSpot, FpARF->getValue(timingDiagram[dep0*numCol+0].depID0));
+					}
+				}
+				
+			}
+			
 			unaddressedDeps = memRS->hasUnaddressedDependencies(robSpot);
 		}
 		else if (timingDiagram[h*numCol + 0].isNop == true)
@@ -1796,6 +1826,17 @@ void Tomasulo::printRS(int select) // 0 = addiRS, 1 = addfRS, mulfRS = 2
 						<< ", Computation: " << std::to_string(mulfRS->getValue(i)->computation) << std::endl;
 		}
 	}
+	else if (select == 3)
+	{
+		std::cout << "Mem RS:\n";
+		for (int i = 0; i < memRS->getSize(); i++)
+		{
+			std::cout << i << ": " << "Operation: " << memRS->getValue(i)->operation << ", Rob Location: " << memRS->getValue(i)->robLocation
+				<< ", Rob Dependency 0: " << memRS->getValue(i)->robDependency0 << ", Rob Dependency 1: " << memRS->getValue(i)->robDependency1
+					<< ", Value 0: " << std::to_string(memRS->getValue(i)->value0) << ", Value 1: " << std::to_string(memRS->getValue(i)->value1) 
+						<< ", Computation: " << std::to_string(memRS->getValue(i)->computation) << std::endl;
+		}
+	}
 	else
 	{
 		std::cout << "Invalid selection of RS table\n";
@@ -1859,27 +1900,28 @@ bool Tomasulo::fullAlgorithm()
 {
 	bool tommyReturn = 0;
 	TOMASULO_RETURN returnVal;
-	std::cout << std::endl;
-	std::cout << "BEFORE:\n";
-	std::cout << "CYVLE NUMBER: " << currentCycle << std::endl;
-	std::cout << "PC: " << PC << std::endl;
-	std::cout << "timingDiagramPointer: " << timingDiagramPointer << std::endl;
-	printOutTimingTable();
-	printROB(0, 15);
-	printRS(0);
+	//std::cout << std::endl;
+	//std::cout << "BEFORE:\n";
+	//std::cout << "CYVLE NUMBER: " << currentCycle << std::endl;
+	//std::cout << "PC: " << PC << std::endl;
+	//std::cout << "timingDiagramPointer: " << timingDiagramPointer << std::endl;
+	//printOutTimingTable();
+	//printROB(0, 15);
+	//printRS(0);
+	//printRS(3);
 	//std::cout << "CDB: " << std::to_string(CDB) << std::endl;
 	//printRS(0);
 	//printRS(1);
 	//printBTB();
 	//printOutTimingTable();
 	//printROB(0, 25);
-	printARF(0);
+	//printARF(0);
 	//printARF(1);
-	printRAT(0);
+	//printRAT(0);
 	
 	clearSteps();
 	//printBTB();
-	std::cout << "Issue.\n";
+	//std::cout << "Issue.\n";
 	returnVal = issue();
 	
 	if (returnVal == DONE)
@@ -1888,22 +1930,22 @@ bool Tomasulo::fullAlgorithm()
 	}
 	else
 	{
-		std::cout << "Execute.\n";
+		//std::cout << "Execute.\n";
 		returnVal = execute();
 		//std::cout << "Success outside: " << returnVal << std::endl;
 		if (returnVal == BRANCH_MISPREDICT)
 		{
-			std::cout << "Speculation recovery.\n";
+			//std::cout << "Speculation recovery.\n";
 			currentCycle++;
 			speculationRecovery();
 		}
 		else
 		{
-			std::cout << "Memory.\n";
+			//std::cout << "Memory.\n";
 			mem();
-			std::cout << "Write back.\n";
+			//std::cout << "Write back.\n";
 			wb();
-			std::cout << "Commit.\n";
+			//std::cout << "Commit.\n";
 			commit();
 		}
 	}
