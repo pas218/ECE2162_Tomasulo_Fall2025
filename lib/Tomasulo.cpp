@@ -194,7 +194,7 @@ TOMASULO_RETURN Tomasulo::issue()
 	// operationType: 0 = int add/subtract, 1 = Fp add/subtract, 2 = fp mult, 3 = Memory, 4 = Branch, 5 = NOP
 	int operationType;
 	Ops physicalOperation;
-	if (ins.opcode == add || ins.opcode == addi)
+	if (ins.opcode == add)
 	{
 		operationType = 0;
 		physicalOperation = ADD;
@@ -230,6 +230,11 @@ TOMASULO_RETURN Tomasulo::issue()
 	else if (ins.opcode == nop)
 	{
 		operationType = 5;
+	}
+	else if (ins.opcode == addi)
+	{
+		operationType = 6;
+		physicalOperation = ADD;
 	}
 	else
 	{
@@ -268,6 +273,11 @@ TOMASULO_RETURN Tomasulo::issue()
 		// Branch predictor uses the integer ALU.
 		freeRSSpot = addiRS->freeSpot();
 	}
+	else if (operationType == 6)
+	{
+		// Integer add immediate.
+		freeRSSpot = addiRS->freeSpot();
+	}
 	else
 	{
 		// operationType == 5, NOP doesn't need RS
@@ -284,7 +294,7 @@ TOMASULO_RETURN Tomasulo::issue()
 	if ((operationType == 5 || freeRSSpot != -1) && freeROBSpot != -1)
 	{
 		// ROB.
-		if ((operationType == 0))
+		if ((operationType == 0) || (operationType == 6))
 		{
 			ROB->table[freeROBSpot].id = 0;
 			ROB->table[freeROBSpot].dst_id = ins.rd.id;
@@ -557,7 +567,48 @@ TOMASULO_RETURN Tomasulo::issue()
 			{
 				addiRS->changeOperation(freeRSSpot, BNE);
 			}
-		} 
+		}
+		else if (operationType == 6)
+		{
+			
+			/*
+			itmp.opcode = addi;
+            itmp.rd.id = stoi(words[1] + 1);
+            itmp.rs.id = stoi(words[2] + 1);
+            itmp.immediate = stoi(words[3] + 1);
+			*/
+			std::cout << "operationType: " << operationType << std::endl;
+			std::cout << "itmp.opcode: " << ins.opcode << std::endl;
+			std::cout << "itmp.rd.id: " << ins.rd.id << std::endl;
+			std::cout << "itmp.rs.id: " << ins.rs.id << std::endl;
+			std::cout << "itmp.immediate: " << ins.immediate << std::endl;
+			// Integer add or subtract.
+			addiRS->changeROBLocation(freeRSSpot, freeROBSpot);
+			addiRS->changeOperation(freeRSSpot, physicalOperation);
+			
+			
+			// Change dependencies/ values 0;
+			int intDependency = 0;
+			
+			regID0 = ins.rs.id;
+			int robDep0 = ROB->findDependency(intDependency, regID0);
+			if (robDep0 != -1)
+			{
+				addiRS->changeROBDependency0(freeRSSpot, robDep0);
+			}
+			else
+			{
+				addiRS->changeRSVal0(freeRSSpot, IntARF->getValue(regID0));
+			}
+			
+			// Change the immediate value
+			int trueImmediate = -1*ins.immediate;
+			std::cout << "trueImmediate: " << trueImmediate << std::endl;
+			addiRS->changeRSVal1(freeRSSpot, ins.immediate*-1);
+			
+			
+			IntRAT->changeValue(ins.rd.id, 0, freeROBSpot);
+		}
 		
 		// If there is no space in the timing diagram, add it.
 		if (timingDiagramPointer >= numRow)
@@ -578,7 +629,7 @@ TOMASULO_RETURN Tomasulo::issue()
 
 		// Change the flag type in the timing diagram depending on operation type.
 		// operationType: 0 = int add/subtract, 1 = Fp add/subtract, 2 = fp mult, 3 = Memory, 4 = Branch, 5 = NOP
-		if (operationType == 0)
+		if ((operationType == 0) || (operationType == 6))
 		{
 			timingDiagram[timingDiagramPointer*numCol + 0].isInt = true;
 		}
@@ -1808,26 +1859,27 @@ bool Tomasulo::fullAlgorithm()
 {
 	bool tommyReturn = 0;
 	TOMASULO_RETURN returnVal;
-	//std::cout << std::endl;
-	//std::cout << "BEFORE:\n";
-	//std::cout << "CYVLE NUMBER: " << currentCycle << std::endl;
-	//std::cout << "PC: " << PC << std::endl;
-	//std::cout << "timingDiagramPointer: " << timingDiagramPointer << std::endl;
-	//printOutTimingTable();
-	//printROB(0, 6);
-	//printRS(1);
+	std::cout << std::endl;
+	std::cout << "BEFORE:\n";
+	std::cout << "CYVLE NUMBER: " << currentCycle << std::endl;
+	std::cout << "PC: " << PC << std::endl;
+	std::cout << "timingDiagramPointer: " << timingDiagramPointer << std::endl;
+	printOutTimingTable();
+	printROB(0, 15);
+	printRS(0);
 	//std::cout << "CDB: " << std::to_string(CDB) << std::endl;
 	//printRS(0);
 	//printRS(1);
 	//printBTB();
 	//printOutTimingTable();
 	//printROB(0, 25);
-	//printARF(0);
+	printARF(0);
 	//printARF(1);
-	//printRAT(0);
+	printRAT(0);
 	
 	clearSteps();
 	//printBTB();
+	std::cout << "Issue.\n";
 	returnVal = issue();
 	
 	if (returnVal == DONE)
@@ -1836,17 +1888,22 @@ bool Tomasulo::fullAlgorithm()
 	}
 	else
 	{
+		std::cout << "Execute.\n";
 		returnVal = execute();
 		//std::cout << "Success outside: " << returnVal << std::endl;
 		if (returnVal == BRANCH_MISPREDICT)
 		{
+			std::cout << "Speculation recovery.\n";
 			currentCycle++;
 			speculationRecovery();
 		}
 		else
 		{
+			std::cout << "Memory.\n";
 			mem();
+			std::cout << "Write back.\n";
 			wb();
+			std::cout << "Commit.\n";
 			commit();
 		}
 	}

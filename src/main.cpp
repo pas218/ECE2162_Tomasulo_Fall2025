@@ -103,17 +103,17 @@ int main(int argc, char *argv[])
 		std::cout << "\nAll instructions committed after " << cycleCount << " cycles.\n";
 	}
 	*/
-	//for (int i = 0; i < 55; i++)
-	//{
-	//	Tommy->fullAlgorithm();
-	//}
-	bool returnVal;
-	returnVal = Tommy->fullAlgorithm();
-	while(!returnVal)
+	for (int i = 0; i < 250; i++)
 	{
-		returnVal = Tommy->fullAlgorithm();
+		Tommy->fullAlgorithm();
 	}
-	Tommy->trimDiagramEnd();
+	//bool returnVal;
+	//returnVal = Tommy->fullAlgorithm();
+	//while(!returnVal)
+	//{
+	//	returnVal = Tommy->fullAlgorithm();
+	//}
+//	Tommy->trimDiagramEnd();
 
 	//Tommy->printRAT(false);
 	//Tommy->printRAT(true);
