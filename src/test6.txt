@@ -11,7 +11,7 @@ Mem[10] = 0.0
 
 Mult.d F1, F2, F3
 Sub R1, R1, R2
-Beq R1, R3, -2
+Beq R1, R3, -3
 Sub.d F1, F4, F5
 Mult.d F7, F1, F2
 SD F7, 0(R4)

@@ -238,7 +238,7 @@ TOMASULO_RETURN Tomasulo::issue()
 	
 	
 	//std::cout << "Operation type: " << operationType << std::endl;
-
+	//std::cout << "ins.opcode: " << (int)ins.opcode << std::endl;
 	// Find a free RS entry for the instruction
 	// operationType: 0 = int add/subtract, 1 = Fp add/subtract, 2 = fp mult, 3 = Memory, 4 = Branch, 5 = NOP
 	int freeRSSpot; 
@@ -394,6 +394,12 @@ TOMASULO_RETURN Tomasulo::issue()
 				addfRS->changeRSVal1(freeRSSpot, FpARF->getValue(regID1));
 			}
 			
+			//std::cout << "From issue.\n";
+			//std::cout << "regID0: " << regID0 << std::endl;
+			//std::cout << "regID1: " << regID1 << std::endl;
+			//std::cout << "robDep0: " << robDep0 << std::endl;
+			//std::cout << "robDep1: " << robDep1 << std::endl;
+			//std::cout << "freeROBSpot: " << freeROBSpot << std::endl;
 			FpRAT->changeValue(ins.rd.id, 0, freeROBSpot);
 		}
 		else if (operationType == 2)
@@ -493,6 +499,10 @@ TOMASULO_RETURN Tomasulo::issue()
 				int dataRegID = ins.rs.id;
 				int dataDep = ROB->findDependency(floatDependency, dataRegID);
 				
+				// std::cout << "ins.rd.id: " << ins.rd.id << std::endl;
+				// std::cout << "itmp.rt.value: " << ins.rt.value << std::endl;
+				// std::cout << "itmp.rs.id: " << ins.rs.id << std::endl;
+				// std::cout << "itmp.rt.imme_flag: " << insrt.imme_flag << std::endl;
 				// NOTE: Stores do NOT update RAT since they don't write to registers
 			}
 		}
@@ -527,18 +537,16 @@ TOMASULO_RETURN Tomasulo::issue()
 			{
 				addiRS->changeRSVal1(freeRSSpot, IntARF->getValue(regID1));
 			}
-			// Need to convert the PC to word address.
-			// Only use the last three bits to track the address.
 			// Do not change the predicted value, and kickout a branch if need be.
 			// If the entry does not exist, add it.
-			BTB_Entry* result = btb.getTableEntry((PC*4) & 0b111);
+			BTB_Entry* result = btb.getTableEntry(PC);
 			if (result == NULL)
 			{
-				btb.changeFullEntry((PC*4) & 0b111, PC+1+static_cast<int>(ins.rt.value), 0, 1);
+				btb.changeFullEntry(PC, PC+1+static_cast<int>(ins.rt.value), 0, 1);
 			}
 			// std::cout << "GETTING TABLE ENTRY!\n";
 			// Get the branch prediction.
-			branchPrediction = btb.getTableEntry((PC*4) & 0b111)->isTaken;
+			branchPrediction = btb.getTableEntry(PC)->isTaken;
 			// std::cout << "PREDICTED: " << (int)branchPrediction << std::endl;
 			// Add the actual operation into the RS.
 			if (ins.opcode == beq)
@@ -606,7 +614,7 @@ TOMASULO_RETURN Tomasulo::issue()
 			FloatRATCheckpoints.push_back(tempFloatVector);
 			branchInstrCheckpoints.push_back(timingDiagramPointer);
 			// If branch, set the PC to the predicted address.
-			PC = btb.getTableEntry((PC*4) & 0b111)->predictedAddress;
+			PC = btb.getTableEntry(PC)->predictedAddress;
 		}
 		else{
 			// If not branch, increment normally.
@@ -712,6 +720,11 @@ TOMASULO_RETURN Tomasulo::execute()
 			int dep0 = addfRS->getValue(RSSpot)->robDependency0;
 			int dep1 = addfRS->getValue(RSSpot)->robDependency1;
 			unaddressedDeps = addfRS->hasUnaddressedDependencies(robSpot);
+			
+			// std::cout << "RSSpot: " << RSSpot << std::endl;
+			// std::cout << "dep0: " << dep0 << std::endl;
+			// std::cout << "dep1: " << dep1 << std::endl;
+			// std::cout << "unaddressedDeps: " << (int)unaddressedDeps << std::endl;
 			
 			// If already commited, get the value from the ARF;
 			if (unaddressedDeps == true)
@@ -900,12 +913,12 @@ TOMASULO_RETURN Tomasulo::execute()
 				// std::cout << "Actual branch value: " << (int)addiRS->getValue(RSSpot)->takeBranch << std::endl;
 				// std::cout << "Earlier predicted value: " << (int)btb.getTableEntry((timingDiagram[h*numCol+0].instrNum*4) & 0b111)->isTaken << std::endl;
 				// Check if the real branch decision agrees with the predicted.
-				if ((addiRS->getValue(RSSpot)->takeBranch) != (btb.getTableEntry((timingDiagram[h*numCol+0].instrNum*4) & 0b111)->isTaken))
+				if ((addiRS->getValue(RSSpot)->takeBranch) != (btb.getTableEntry(timingDiagram[h*numCol+0].instrNum)->isTaken))
 				{
 					misprediction.timingDiagramRow = h;
 					misprediction.robSpot          = robSpot;
 
-					btb.changeIsTaken((timingDiagram[h*numCol+0].instrNum*4) & 0b111, 1);
+					btb.changeIsTaken(timingDiagram[h*numCol+0].instrNum, 1);
 					// std::cout << "Success branch mispredict.\n";
 					success = BRANCH_MISPREDICT;
 
@@ -1798,6 +1811,11 @@ bool Tomasulo::fullAlgorithm()
 	//std::cout << std::endl;
 	//std::cout << "BEFORE:\n";
 	//std::cout << "CYVLE NUMBER: " << currentCycle << std::endl;
+	//std::cout << "PC: " << PC << std::endl;
+	//std::cout << "timingDiagramPointer: " << timingDiagramPointer << std::endl;
+	//printOutTimingTable();
+	//printROB(0, 6);
+	//printRS(1);
 	//std::cout << "CDB: " << std::to_string(CDB) << std::endl;
 	//printRS(0);
 	//printRS(1);
@@ -1809,6 +1827,7 @@ bool Tomasulo::fullAlgorithm()
 	//printRAT(0);
 	
 	clearSteps();
+	//printBTB();
 	returnVal = issue();
 	
 	if (returnVal == DONE)

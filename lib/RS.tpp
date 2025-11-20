@@ -153,7 +153,10 @@ int RS<T, Op>::getSize()
 template <typename T, typename Op>
 bool RS<T, Op>::changeROBLocation(int stationNumber, int robNumber)
 {
-    bool returnVal = checkBounds(stationNumber) && (takenRobSpots.count(robNumber) == 0);
+	//std::cout << "checkBounds(stationNumber): " << (int)checkBounds(stationNumber) << std::endl;
+	//std::cout << "takenRobSpots.count(robNumber): " << takenRobSpots.count(robNumber) << std::endl;
+    //bool returnVal = checkBounds(stationNumber) && (takenRobSpots.count(robNumber) == 0);
+	bool returnVal = checkBounds(stationNumber);
     if (returnVal)
     {
         stationsPtr[stationNumber].robLocation = robNumber;
