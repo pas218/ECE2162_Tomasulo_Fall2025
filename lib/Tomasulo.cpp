@@ -493,13 +493,6 @@ TOMASULO_RETURN Tomasulo::issue()
 				int dataRegID = ins.rs.id;
 				int dataDep = ROB->findDependency(floatDependency, dataRegID);
 				
-				// Store a marker in ROB indicating there's a data dependency to check
-				if (dataDep != -1)
-				{
-					// Mark that store has unresolved data dependency
-					ROB->table[freeROBSpot].cmt_flag = -1; // Use -1 to mean "waiting for data"
-				}
-				
 				// NOTE: Stores do NOT update RAT since they don't write to registers
 			}
 		}
@@ -790,26 +783,6 @@ TOMASULO_RETURN Tomasulo::execute()
 		else if (timingDiagram[h*numCol + 0].isMem == true)
 		{
 			unaddressedDeps = memRS->hasUnaddressedDependencies(robSpot);
-			
-			// For stores, also check if the data value is ready
-			inst &ins = instruction[timingDiagram[h*numCol+0].instrNum];
-			if (ins.opcode == store && !unaddressedDeps)
-			{
-				// Check if the data register (rs for stores) is ready
-				int floatDependency = 1;
-				int dataRegID = ins.rs.id;
-				int dataDep = ROB->findDependency(floatDependency, dataRegID);
-				
-				// Block if there's still a dependency that hasn't been resolved
-				if (dataDep != -1 && dataDep != robSpot)
-				{
-					// Check if that ROB entry has completed writeback
-					if (ROB->table[dataDep].cmt_flag != 1)
-					{
-						unaddressedDeps = true;
-					}
-				}
-			}
 		}
 		else if (timingDiagram[h*numCol + 0].isNop == true)
 		{
@@ -1436,10 +1409,11 @@ TOMASULO_RETURN Tomasulo::commit()
 
 				if (allEarlierCommitted)
 				{
-					// Check if data is ready
-					int floatDependency = 1;
-					int dataRegID = ins.rs.id;
-					int dataDep = ROB->findDependency(floatDependency, dataRegID);
+					// Check if data value is ready by checking if it's in ARF or ready in the ROB.
+					// The value is ready if we can read it from the ARF.
+					int storeDataReg = ins.rs.id;
+					float storeValue = FpARF->getValue(storeDataReg);
+					canCommit = true;
 					
 					/*
 					std::cout << "  dataDep: " << dataDep << std::endl;
@@ -1448,12 +1422,6 @@ TOMASULO_RETURN Tomasulo::commit()
 						std::cout << "  ROB[" << dataDep << "].cmt_flag: " << ROB->table[dataDep].cmt_flag << std::endl;
 					}
 					*/
-
-					if (dataDep == -1 || ROB->table[dataDep].cmt_flag == 1)
-					{
-						canCommit = true;
-						//std::cout << "  >>> Store can commit!" << std::endl;
-					}
 				}
 			}
 		}
