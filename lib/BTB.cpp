@@ -1,13 +1,7 @@
 #include "BTB.hpp"
 #include <iostream>
-/*
-struct BTB_Entry
-{
-	int instrAddress;
-	int predictedAddress;
-	bool isTaken;
-}
-*/
+
+#define DEFAULT_BRANCH true
 
 BTB::BTB()
 {
@@ -18,7 +12,7 @@ BTB::BTB()
 	{
 		table[i].instrAddress = -1;
 		table[i].predictedAddress = -1;
-		table[i].isTaken = true; // Assume first is taken.
+		table[i].isTaken = DEFAULT_BRANCH; // Assume first is taken.
 	}
 }
 
@@ -55,7 +49,7 @@ bool BTB::clearEntry(int address)
 		{
 			table[i].instrAddress = -1;
 			table[i].predictedAddress = -1;
-			table[i].isTaken = true; // Assume first is taken.
+			table[i].isTaken = DEFAULT_BRANCH; // Assume first is taken.
 			returnVal = 1;
 			break;
 		} 

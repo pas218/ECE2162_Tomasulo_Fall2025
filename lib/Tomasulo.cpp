@@ -998,8 +998,8 @@ TOMASULO_RETURN Tomasulo::execute()
 					addiRS->compute(RSSpot); // This calculates the branch decision
 				}
 			
-				// std::cout << "Actual branch value: " << (int)addiRS->getValue(RSSpot)->takeBranch << std::endl;
-				// std::cout << "Earlier predicted value: " << (int)btb.getTableEntry((timingDiagram[h*numCol+0].instrNum*4) & 0b111)->isTaken << std::endl;
+				//std::cout << "Actual branch value: " << (int)addiRS->getValue(RSSpot)->takeBranch << std::endl;
+				//std::cout << "Earlier predicted value: " << (int)btb.getTableEntry(timingDiagram[h*numCol+0].instrNum)->isTaken << std::endl;
 				// Check if the real branch decision agrees with the predicted.
 				if ((addiRS->getValue(RSSpot)->takeBranch) != (btb.getTableEntry(timingDiagram[h*numCol+0].instrNum)->isTaken))
 				{
@@ -1678,7 +1678,18 @@ TOMASULO_RETURN Tomasulo::speculationRecovery()
 	
 	// Get back to the right PC and timind diagram row;
 	timingDiagramPointer = misprediction.timingDiagramRow+1;
-	PC = timingDiagram[misprediction.timingDiagramRow*numCol+0].instrNum+1;
+	
+	// Reset the right PC
+	bool takeBranch = btb.getTableEntry(timingDiagram[misprediction.timingDiagramRow*numCol+0].instrNum)->isTaken;
+	if (takeBranch == true)
+	{
+		PC = btb.getTableEntry(timingDiagram[misprediction.timingDiagramRow*numCol+0].instrNum)->predictedAddress;
+	}
+	else
+	{
+		PC = timingDiagram[misprediction.timingDiagramRow*numCol+0].instrNum+1;
+	}
+	
 	
 	success = NO_ERROR;
 	return success;
@@ -1883,7 +1894,52 @@ void Tomasulo::printOutTimingTable()
 
     for (int i = 0; i < numRow; i++)
     {
-        std::cout << "Instr #" << timingDiagram[i*numCol+0].instrNum << ":\t";
+        //std::cout << "Instr #" << timingDiagram[i*numCol+0].instrNum << ":\t";
+		const inst &it = instruction[timingDiagram[i*numCol+0].instrNum];
+		   // std::cout << "Instr #" << (i) << ": ";
+
+            switch (it.opcode)
+            {
+				case add:
+					std::cout << "Add R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
+                    break;
+                case addi:
+                    std::cout << "Addi R" << it.rd.id << ", R" << it.rs.id << ", " << it.immediate;
+                    break;
+                case sub:
+                    std::cout << "Sub R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
+                    break;
+                case addf:
+                    std::cout << "Add.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
+                    break;
+                case subf:
+                    std::cout << "Sub.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
+                    break;
+                case mulf:
+                    std::cout << "Mult.d F" << it.rd.id << ", F" << it.rs.id << ", F" << it.rt.id;
+                    break;
+                case load:
+                    std::cout << "Ld F" << it.rd.id << ", " << it.rt.value << "(R" << it.rs.id << ")";
+                    break;
+                case store:
+                    std::cout << "Sd F" << it.rs.id << ", " << it.rt.value << "(R" << it.rd.id << ")";
+                    break;
+                case beq:
+                    std::cout << "Beq R" << it.rs.id << ", R" << it.rt.id << ", " << it.rt.value;
+                    break;
+                case bne:
+                    std::cout << "Bne R" << it.rs.id << ", R" << it.rt.id << ", " << it.rt.value;
+                    break;
+                case nop:
+                    std::cout << "NOP";
+                    break;
+                default:
+                    std::cout << "(Unknown opcode: " << it.name << ")";
+                    break;
+            }
+			
+			std::cout << ": \n";
+			std::cout << "                  ";
         for (int j = 0; j < numCol; j++)
         {
             int start = timingDiagram[i*numCol+j].startCycle;

@@ -103,10 +103,10 @@ int main(int argc, char *argv[])
 		std::cout << "\nAll instructions committed after " << cycleCount << " cycles.\n";
 	}
 	*/
-	/*for (int i = 0; i < 55; i++)
-	{
-		Tommy->fullAlgorithm();
-	}*/
+	//for (int i = 0; i < 100; i++)
+	//{
+	//	Tommy->fullAlgorithm();
+	//}
 	bool returnVal;
 	returnVal = Tommy->fullAlgorithm();
 	while(!returnVal)
