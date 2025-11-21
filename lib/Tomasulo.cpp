@@ -515,7 +515,7 @@ TOMASULO_RETURN Tomasulo::issue()
 				// std::cout << "ins.rd.id: " << ins.rd.id << std::endl;
 				// std::cout << "itmp.rt.value: " << ins.rt.value << std::endl;
 				// std::cout << "itmp.rs.id: " << ins.rs.id << std::endl;
-				// std::cout << "itmp.rt.imme_flag: " << insrt.imme_flag << std::endl;
+				// std::cout << "itmp.rt.imme_flag: " << ins.rt.imme_flag << std::endl;
 				// NOTE: Stores do NOT update RAT since they don't write to registers
 			}
 		}
@@ -734,36 +734,18 @@ TOMASULO_RETURN Tomasulo::execute()
 			
 			if (unaddressedDeps == true)
 			{
-				if (ROB->table[dep0].id == -1)
+				if (dep0 != -1 && ROB->table[dep0].cmt_flag == 1)
 				{
-					if (timingDiagram[dep0*numCol + 4].startCycle == 0)
-					{
-						// std::cout << "From the CDB.\n";
-						addiRS->changeRSVal0(RSSpot, static_cast<int>(CDB));
-					}
-					else
-					{
-						// std::cout << "From the ARF.\n";
-						// std::cout << "timingDiagram[dep0*numCol+0].depID0: " << timingDiagram[dep0*numCol+0].depID0 << std::endl;
-						addiRS->changeRSVal0(RSSpot, IntARF->getValue(timingDiagram[dep0*numCol+0].depID0));
-					}
+					addiRS->changeRSVal0(RSSpot, static_cast<int>(ROB->table[dep0].value));
+					addiRS->changeROBDependency0(RSSpot, -1);
 				}
-				if (ROB->table[dep1].id == -1)
+				if (dep1 != -1 && ROB->table[dep1].cmt_flag == 1)
 				{
-					if (timingDiagram[dep1*numCol + 4].startCycle == 0)
-					{
-						// std::cout << "From the CDB.\n";
-						addiRS->changeRSVal1(RSSpot, static_cast<int>(CDB));
-					}
-					else
-					{
-						// std::cout << "From the ARF.\n";
-						// std::cout << "timingDiagram[dep1*numCol+0].depID1: " << timingDiagram[dep1*numCol+0].depID1 << std::endl;
-						addiRS->changeRSVal1(RSSpot, IntARF->getValue(timingDiagram[dep1*numCol+0].depID1));
-					}
+					addiRS->changeRSVal1(RSSpot, static_cast<int>(ROB->table[dep1].value));
+					addiRS->changeROBDependency1(RSSpot, -1);
 				}
 			}
-			
+
 			// Recalculate.
 			unaddressedDeps = addiRS->hasUnaddressedDependencies(robSpot);
 		}
@@ -783,29 +765,18 @@ TOMASULO_RETURN Tomasulo::execute()
 			// If already commited, get the value from the ARF;
 			if (unaddressedDeps == true)
 			{
-				if (ROB->table[dep0].id == -1)
+				if (dep0 != -1 && ROB->table[dep0].cmt_flag == 1)
 				{
-					if (timingDiagram[dep0*numCol + 4].startCycle == 0)
-					{
-						addfRS->changeRSVal0(RSSpot, CDB);
-					}
-					else{
-						addfRS->changeRSVal0(RSSpot, FpARF->getValue(timingDiagram[dep0*numCol+0].depID0));
-					}
+					addfRS->changeRSVal0(RSSpot, ROB->table[dep0].value);
+					addfRS->changeROBDependency0(RSSpot, -1);
 				}
-				if (ROB->table[dep1].id == -1)
+				if (dep1 != -1 && ROB->table[dep1].cmt_flag == 1)
 				{
-					if (timingDiagram[dep1*numCol + 4].startCycle == 0)
-					{
-						addfRS->changeRSVal1(RSSpot, CDB);
-					}
-					else
-					{
-						addfRS->changeRSVal1(RSSpot, FpARF->getValue(timingDiagram[dep1*numCol+0].depID1));
-					}
+					addfRS->changeRSVal1(RSSpot, ROB->table[dep1].value);
+					addfRS->changeROBDependency1(RSSpot, -1);
 				}
 			}
-			
+
 			// Recalculate.
 			unaddressedDeps = addfRS->hasUnaddressedDependencies(robSpot);
 		}
@@ -819,31 +790,18 @@ TOMASULO_RETURN Tomasulo::execute()
 			
 			if (unaddressedDeps == true)
 			{
-				if (ROB->table[dep0].id == -1)
+				if (dep0 != -1 && ROB->table[dep0].cmt_flag == 1)
 				{
-					if (timingDiagram[dep0*numCol + 4].startCycle == 0)
-					{
-						mulfRS->changeRSVal0(RSSpot, CDB);
-					}
-					else
-					{
-						mulfRS->changeRSVal0(RSSpot, FpARF->getValue(timingDiagram[dep0*numCol+0].depID0));
-					}
+					mulfRS->changeRSVal0(RSSpot, ROB->table[dep0].value);
+					mulfRS->changeROBDependency0(RSSpot, -1);
 				}
-				
-				if (ROB->table[dep1].id == -1)
+				if (dep1 != -1 && ROB->table[dep1].cmt_flag == 1)
 				{
-					if (timingDiagram[dep1*numCol + 4].startCycle == 0)
-					{
-						mulfRS->changeRSVal1(RSSpot, CDB);
-					}
-					else
-					{
-						mulfRS->changeRSVal1(RSSpot, FpARF->getValue(timingDiagram[dep1*numCol+0].depID1));
-					}
+					mulfRS->changeRSVal1(RSSpot, ROB->table[dep1].value);
+					mulfRS->changeROBDependency1(RSSpot, -1);
 				}
 			}
-			
+
 			// Recalculate.
 			unaddressedDeps = mulfRS->hasUnaddressedDependencies(robSpot);
 		}
@@ -862,20 +820,13 @@ TOMASULO_RETURN Tomasulo::execute()
 			
 			if (unaddressedDeps == true)
 			{
-				if (ROB->table[dep0].id == -1)
+				if (dep0 != -1 && ROB->table[dep0].cmt_flag == 1)  // Value is ready after WB
 				{
-					if (timingDiagram[dep0*numCol + 4].startCycle == 0)
-					{
-						memRS->changeRSVal0(RSSpot, CDB);
-					}
-					else
-					{
-						memRS->changeRSVal0(RSSpot, static_cast<float>(IntARF->getValue(timingDiagram[dep0*numCol+0].depID0)));
-					}
+					memRS->changeRSVal0(RSSpot, ROB->table[dep0].value);
+					memRS->changeROBDependency0(RSSpot, -1);
 				}
-				
 			}
-			
+
 			unaddressedDeps = memRS->hasUnaddressedDependencies(robSpot);
 		}
 		else if (timingDiagram[h*numCol + 0].isNop == true)
@@ -963,12 +914,10 @@ TOMASULO_RETURN Tomasulo::execute()
 				{
 					memRS->compute(RSSpot); // This calculates address = base + offset
 
-					/*
-					std::cout << "Store instruction #" << timingDiagram[h*numCol+0].instrNum << std::endl;
-					std::cout << "RS value0 (base) = " << memRS->getValue(RSSpot)->value0 << std::endl;
-					std::cout << "RS value1 (offset) = " << memRS->getValue(RSSpot)->value1 << std::endl;
-					std::cout << "RS computation (address) = " << memRS->getValue(RSSpot)->computation << std::endl;
-					*/
+					// std::cout << "Store instruction #" << timingDiagram[h*numCol+0].instrNum << std::endl;
+					// std::cout << "RS value0 (base) = " << memRS->getValue(RSSpot)->value0 << std::endl;
+					// std::cout << "RS value1 (offset) = " << memRS->getValue(RSSpot)->value1 << std::endl;
+					// std::cout << "RS computation (address) = " << memRS->getValue(RSSpot)->computation << std::endl;
 				}
 			}
 		}
@@ -1403,14 +1352,12 @@ TOMASULO_RETURN Tomasulo::commit()
 			int address = static_cast<int>(ROB->table[ROBSpot].value); // Address was stored in ROB
 			float storeValue = FpARF->getValue(storeInst.rs.id); // Get data from register
 			
-			/*
-			std::cout << "Store instruction #" << timingDiagram[storeCommitInstrIndex*numCol+0].instrNum << std::endl;
-			std::cout << "storeInst.rd.id = " << storeInst.rd.id << std::endl;
-			std::cout << "storeInst.rs.id = " << storeInst.rs.id << std::endl;
-			std::cout << "storeInst.rt.value = " << storeInst.rt.value << std::endl;
-			std::cout << "Computed address from ROB = " << address << std::endl;
-			std::cout << "Store value from ARF = " << storeValue << std::endl;
-			*/
+			// std::cout << "Store instruction #" << timingDiagram[storeCommitInstrIndex*numCol+0].instrNum << std::endl;
+			// std::cout << "storeInst.rd.id = " << storeInst.rd.id << std::endl;
+			// std::cout << "storeInst.rs.id = " << storeInst.rs.id << std::endl;
+			// std::cout << "storeInst.rt.value = " << storeInst.rt.value << std::endl;
+			// std::cout << "Computed address from ROB = " << address << std::endl;
+			// std::cout << "Store value from ARF = " << storeValue << std::endl;
 
 			// Officially commit by updating the memory vector
 			bool found = false;
@@ -1485,13 +1432,11 @@ TOMASULO_RETURN Tomasulo::commit()
 		if (ins.opcode == store)
 		{
 			// std::cout << "Store.\n";
-			/*
-			std::cout << "\nCycle " << currentCycle << ": Checking store (instr #" << (h+1) << ")" << std::endl;
-			std::cout << "  EX endCycle: " << timingDiagram[h*numCol + 1].endCycle << std::endl;
-			std::cout << "  storeCommitInProgress: " << storeCommitInProgress << std::endl;
-			std::cout << "  currentCycle >= memoryBusFreeAtCycle: " << currentCycle << " >= " << memoryBusFreeAtCycle << std::endl;
-			std::cout << "  stepThisCycle: " << timingDiagram[h*numCol + 0].stepThisCycle << std::endl;
-			*/
+			// std::cout << "\nCycle " << currentCycle << ": Checking store (instr #" << (h+1) << ")" << std::endl;
+			// std::cout << "  EX endCycle: " << timingDiagram[h*numCol + 1].endCycle << std::endl;
+			// std::cout << "  storeCommitInProgress: " << storeCommitInProgress << std::endl;
+			// std::cout << "  currentCycle >= memoryBusFreeAtCycle: " << currentCycle << " >= " << memoryBusFreeAtCycle << std::endl;
+			// std::cout << "  stepThisCycle: " << timingDiagram[h*numCol + 0].stepThisCycle << std::endl;
 
 
 			// Store can commit if:
@@ -1890,7 +1835,7 @@ void Tomasulo::printOutTimingTable()
 {
     std::cout << "\n-----------------------------------------------\n";
     std::cout << "Timing table:\n";
-    std::cout << "\t\tISSUE\tEX\tMEM\tWB\tCOMMIT\n";
+    std::cout << "\t\t\tISSUE\tEX\tMEM\tWB\tCOMMIT\n";
 
     for (int i = 0; i < numRow; i++)
     {
@@ -1939,7 +1884,7 @@ void Tomasulo::printOutTimingTable()
             }
 			
 			std::cout << ": \n";
-			std::cout << "                  ";
+			std::cout << "\t\t\t";
         for (int j = 0; j < numCol; j++)
         {
             int start = timingDiagram[i*numCol+j].startCycle;
