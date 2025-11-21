@@ -70,13 +70,13 @@ int main(int argc, char *argv[])
 	
 	addiRS = new RS<int, Ops>(parser.num_addiRS);
 	addfRS = new RS<float, Ops>(parser.num_addfRS);
-	std::cout << "Num multfRS reservation stations: " << parser.num_mulfRS << std::endl;
+	//std::cout << "Num multfRS reservation stations: " << parser.num_mulfRS << std::endl;
 	mulfRS = new RS<float, Ops>(parser.num_mulfRS);
 	memRS = new RS<float, Ops>(parser.num_memRS);
 	
 	ROB    = new ReOrderBuf(parser.num_ROB);
 	
-	//std::cout << "Begin Tomasulo algorithm..." << std::endl;
+	std::cout << "Begin Tomasulo algorithm..." << std::endl;
 
 	Tomasulo *Tommy;
 	Tommy = new Tomasulo(parser.instruction.size(), parser.cycle_addi, parser.cycle_addf, parser.cycle_mulf,

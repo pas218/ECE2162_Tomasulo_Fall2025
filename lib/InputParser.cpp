@@ -435,14 +435,14 @@ void InputParser::parse(const std::string &filename)
     // Close input file
     input.close();
 
-    // Print the parsed results from input.txt to the terminal
+    // Print the parsed results from the input file to the terminal
     //------------------------------------------------------------------------------------------
     std::cout << "\n-----------------------------------------------\n";
-    std::cout << "Printing information parsed from input.txt...\n\n";
+    std::cout << "Printing information parsed from the input file...\n\n";
     std::cout << "Integer adder: " << num_addiRS << " RS, " << cycle_addi << " EX cycle(s), " << num_addi << " FU\n";
     std::cout << "FP adder: " << num_addfRS << " RS, " << cycle_addf << " EX cycle(s), " << num_addf << " FU\n";
     std::cout << "FP multiplier: " << num_mulfRS << " RS, " << cycle_mulf << " EX cycle(s), " << num_mulf << " FU\n";
-    std::cout << "Load/store unit: " << num_memRS << " RS, " << cycle_mem_exe << " EX cycle(s), " << cycle_mem_mem << " MEM cycle(s), " << num_mem << " FU\n\n";
+    std::cout << "Mem unit: " << num_memRS << " RS, " << cycle_mem_exe << " EX cycle(s), " << cycle_mem_mem << " MEM cycle(s), " << num_mem << " FU\n\n";
     std::cout << "ROB entries: " << num_ROB << "\n";
     std::cout << "CDB buffer entries: " << num_CDB_buf << "\n\n";
 

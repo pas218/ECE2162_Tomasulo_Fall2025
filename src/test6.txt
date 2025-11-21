@@ -6,7 +6,7 @@ Load/store unit	3			1				4				1
 
 ROB entries = 128
 CDB buffer entries = 1
-R1 = 10, R2 = 1, R3 = 1, R4 = 10, F1 = 10.2, F2= -5.2, F3 = 5.0, F4 = 9.0, F5 = 1.0
+R1 = 10, R2 = 1, R3 = 1, R4 = 10, F1 = 10.5, F2= -5.5, F3 = 5.0, F4 = 9.0, F5 = 1.0
 Mem[10] = 0.0
 
 Mult.d F1, F2, F3

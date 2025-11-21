@@ -870,7 +870,7 @@ TOMASULO_RETURN Tomasulo::execute()
 					}
 					else
 					{
-						memRS->changeRSVal0(RSSpot, FpARF->getValue(timingDiagram[dep0*numCol+0].depID0));
+						memRS->changeRSVal0(RSSpot, static_cast<float>(IntARF->getValue(timingDiagram[dep0*numCol+0].depID0)));
 					}
 				}
 				
@@ -962,6 +962,13 @@ TOMASULO_RETURN Tomasulo::execute()
 				if (RSSpot != -1)
 				{
 					memRS->compute(RSSpot); // This calculates address = base + offset
+
+					/*
+					std::cout << "Store instruction #" << timingDiagram[h*numCol+0].instrNum << std::endl;
+					std::cout << "RS value0 (base) = " << memRS->getValue(RSSpot)->value0 << std::endl;
+					std::cout << "RS value1 (offset) = " << memRS->getValue(RSSpot)->value1 << std::endl;
+					std::cout << "RS computation (address) = " << memRS->getValue(RSSpot)->computation << std::endl;
+					*/
 				}
 			}
 		}
@@ -1396,6 +1403,15 @@ TOMASULO_RETURN Tomasulo::commit()
 			int address = static_cast<int>(ROB->table[ROBSpot].value); // Address was stored in ROB
 			float storeValue = FpARF->getValue(storeInst.rs.id); // Get data from register
 			
+			/*
+			std::cout << "Store instruction #" << timingDiagram[storeCommitInstrIndex*numCol+0].instrNum << std::endl;
+			std::cout << "storeInst.rd.id = " << storeInst.rd.id << std::endl;
+			std::cout << "storeInst.rs.id = " << storeInst.rs.id << std::endl;
+			std::cout << "storeInst.rt.value = " << storeInst.rt.value << std::endl;
+			std::cout << "Computed address from ROB = " << address << std::endl;
+			std::cout << "Store value from ARF = " << storeValue << std::endl;
+			*/
+
 			// Officially commit by updating the memory vector
 			bool found = false;
 			for (auto &memEntry : *memory)
