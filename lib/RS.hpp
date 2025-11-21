@@ -8,10 +8,12 @@
 enum Ops
 {
 	EMPTY = 0,
-	ADD = 1,
-	SUB = 2,
-	MULT = 3,
-	DIV = 4
+	ADD,
+	SUB,
+	MULT,
+	DIV,
+	BEQ,
+	BNE
 };
 
 
@@ -42,6 +44,9 @@ struct RS_type
 	T value0 = 0;
 	T value1 = 0;
 	T computation = 0;
+	bool isBranch;
+	int  branchOffset;
+	bool takeBranch;
 	bool computationDone = false;
 };
 

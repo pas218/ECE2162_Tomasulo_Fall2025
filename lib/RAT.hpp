@@ -19,6 +19,8 @@ class RAT
 		RAT(); 
         RAT(int numLocations);
 		~RAT();
+		// Copy constructor
+		RAT(RAT<T>& input_class);
 		
 		// Returns -1 if no location.
 		int getNextARFLocation(int ROBSpot);
@@ -28,6 +30,8 @@ class RAT
 		// If you want to change it to a ROB location, isARF should be 0 and make sure to enter the rob location.
         bool changeValue(int locationNumber, bool isARF, int robNumber);
 		bool resetLocation(int locationNumber);
+		std::vector<RAT_type> exportRAT();
+		void recoverRAT(std::vector<RAT_type> &numbers);
         RAT_type* getValue(int locationNumber);
 };
 

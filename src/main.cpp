@@ -28,8 +28,21 @@ std::vector<inst> instruction;
 
 
 
-int main()
+int main(int argc, char *argv[])
 {
+	// Find input filepath.
+	std::string filepath;
+	if (argc == 2)
+	{
+		std::cout << "File path provided. Using path: " << argv[1] << std::endl;
+		filepath = argv[1];
+	}
+	else
+	{
+		std::cout << "NOTE: No file path provided. Using default file path: src/input.txt.\n";
+		filepath = "src/input.txt";
+	}	
+	
 	ARF<int> *IntARF;
 	ARF<float> *FpARF;
 	RAT<int> *IntRAT;
@@ -42,13 +55,13 @@ int main()
 	
     std::cout << "Begin main.cpp" << std::endl;
 	
-	int numARF = 16;
+	int numARF = 32;
     
 	
 	InputParser parser(numARF);
 
     // Parse the input.txt file and print the input configuration that has been read
-    parser.parse("src\\input.txt");
+    parser.parse(filepath);
 	
 	IntARF = new ARF<int>(parser.intARFValues);
     FpARF  = new ARF<float>(parser.floatARFValues);
@@ -57,6 +70,7 @@ int main()
 	
 	addiRS = new RS<int, Ops>(parser.num_addiRS);
 	addfRS = new RS<float, Ops>(parser.num_addfRS);
+	//std::cout << "Num multfRS reservation stations: " << parser.num_mulfRS << std::endl;
 	mulfRS = new RS<float, Ops>(parser.num_mulfRS);
 	memRS = new RS<float, Ops>(parser.num_memRS);
 	
@@ -69,6 +83,7 @@ int main()
 		parser.cycle_mem_exe, parser.cycle_mem_mem, parser.num_CDB_buf, IntARF, FpARF, addiRS, addfRS, mulfRS,
 		memRS, IntRAT, FpRAT, ROB, parser.instruction, &parser.memory);
 
+/*
 	int maxCycles = 1000; // Limit of 1000 cycles for safety
 	int cycleCount = 0;
 	
@@ -87,6 +102,18 @@ int main()
 	{
 		std::cout << "\nAll instructions committed after " << cycleCount << " cycles.\n";
 	}
+	*/
+	/*for (int i = 0; i < 55; i++)
+	{
+		Tommy->fullAlgorithm();
+	}*/
+	bool returnVal;
+	returnVal = Tommy->fullAlgorithm();
+	while(!returnVal)
+	{
+		returnVal = Tommy->fullAlgorithm();
+	}
+	Tommy->trimDiagramEnd();
 
 	//Tommy->printRAT(false);
 	//Tommy->printRAT(true);

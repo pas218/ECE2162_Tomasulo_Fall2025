@@ -11,14 +11,6 @@ inline bool RS<T, Op>::checkBounds(int stationNumber)
 	
 }
 
-/*
-template <typename T, typename Op>
-inline bool RS<T, Op>::checkRobFree(int robLocation)
-{
-	return 
-}
-*/
-
 template <typename T, typename Op>
 RS<T, Op>::RS()
 {
@@ -44,6 +36,9 @@ RS<T, Op>::RS()
 		stationsPtr[i].robLocation    = -1;
 		stationsPtr[i].robDependency0 = -1;
 		stationsPtr[i].robDependency1 = -1;
+		stationsPtr[i].isBranch = 0;
+		stationsPtr[i].branchOffset = 0;
+		stationsPtr[i].takeBranch = 0;
 		stationsPtr[i].computationDone = false;
 	}
 }
@@ -72,6 +67,9 @@ RS<T, Op>::RS(int numLocations)
 		stationsPtr[i].robLocation    = -1;
 		stationsPtr[i].robDependency0 = -1;
 		stationsPtr[i].robDependency1 = -1;
+		stationsPtr[i].isBranch = 0;
+		stationsPtr[i].branchOffset = 0;
+		stationsPtr[i].takeBranch = 0;
 		stationsPtr[i].computationDone = false;
 	}
 }
@@ -155,7 +153,10 @@ int RS<T, Op>::getSize()
 template <typename T, typename Op>
 bool RS<T, Op>::changeROBLocation(int stationNumber, int robNumber)
 {
-    bool returnVal = checkBounds(stationNumber) && (takenRobSpots.count(robNumber) == 0);
+	//std::cout << "checkBounds(stationNumber): " << (int)checkBounds(stationNumber) << std::endl;
+	//std::cout << "takenRobSpots.count(robNumber): " << takenRobSpots.count(robNumber) << std::endl;
+    //bool returnVal = checkBounds(stationNumber) && (takenRobSpots.count(robNumber) == 0);
+	bool returnVal = checkBounds(stationNumber);
     if (returnVal)
     {
         stationsPtr[stationNumber].robLocation = robNumber;
@@ -264,6 +265,26 @@ bool RS<T, Op>::compute(int stationNumber)
 					static_cast<T>(stationsPtr[stationNumber].value0) / static_cast<T>(stationsPtr[stationNumber].value1);
 				stationsPtr[stationNumber].computationDone = true;
 				break;
+			case BEQ:
+				if (static_cast<T>(stationsPtr[stationNumber].value0) == static_cast<T>(stationsPtr[stationNumber].value1))
+				{
+					stationsPtr[stationNumber].takeBranch = 1;
+				}
+				else
+				{
+					stationsPtr[stationNumber].takeBranch = 0;
+				}
+				break;
+			case BNE:
+				if (static_cast<T>(stationsPtr[stationNumber].value0) != static_cast<T>(stationsPtr[stationNumber].value1))
+				{
+					stationsPtr[stationNumber].takeBranch = 1;
+				}
+				else
+				{
+					stationsPtr[stationNumber].takeBranch = 0;
+				}
+				break;
 			default:
 				std::cout << "Invalid operation.\n";
 				break;
@@ -271,6 +292,7 @@ bool RS<T, Op>::compute(int stationNumber)
 	}
 	return returnVal;
 }
+
 
 template <typename T, typename Op>
 bool RS<T, Op>::clearLocation(int stationNumber)
@@ -287,6 +309,9 @@ bool RS<T, Op>::clearLocation(int stationNumber)
         stationsPtr[stationNumber].value0 = static_cast<T>(0);
         stationsPtr[stationNumber].value1 = static_cast<T>(0);
         stationsPtr[stationNumber].computation = static_cast<T>(0);
+		stationsPtr[stationNumber].isBranch = 0;
+		stationsPtr[stationNumber].branchOffset = 0;
+		stationsPtr[stationNumber].takeBranch = 0;
         stationsPtr[stationNumber].computationDone = false;
     }
     return returnVal;
