@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 	
     std::cout << "Begin main.cpp" << std::endl;
 	
-	int numARF = 16;
+	int numARF = 32;
     
 	
 	InputParser parser(numARF);

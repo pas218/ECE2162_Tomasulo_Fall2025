@@ -605,9 +605,9 @@ TOMASULO_RETURN Tomasulo::issue()
 			}
 			
 			// Change the immediate value
-			int trueImmediate = -1*ins.immediate;
+			int trueImmediate = ins.immediate;
 			// std::cout << "trueImmediate: " << trueImmediate << std::endl;
-			addiRS->changeRSVal1(freeRSSpot, ins.immediate*-1);
+			addiRS->changeRSVal1(freeRSSpot, ins.immediate);
 			
 			
 			IntRAT->changeValue(ins.rd.id, 0, freeROBSpot);

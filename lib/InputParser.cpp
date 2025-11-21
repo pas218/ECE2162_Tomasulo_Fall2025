@@ -358,7 +358,7 @@ void InputParser::parse(const std::string &filename)
 			itmp.opcode = addi;
             itmp.rd.id = stoi(words[1] + 1);
             itmp.rs.id = stoi(words[2] + 1);
-            itmp.immediate = stoi(words[3] + 1);
+            itmp.immediate = stoi(words[3]);
 		}
         else if (op == "Sub" || op == "sub" || op == "SUB")
         {
@@ -492,7 +492,7 @@ void InputParser::parse(const std::string &filename)
         for (size_t i = 0; i < instruction.size(); ++i)
         {
             const inst &it = instruction[i];
-		    std::cout << "Instr #" << (i+1) << ": ";
+		    std::cout << "Instr #" << (i) << ": ";
 
             switch (it.opcode)
             {
@@ -500,7 +500,7 @@ void InputParser::parse(const std::string &filename)
 					std::cout << "Add R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
                     break;
                 case addi:
-                    std::cout << "Add R immediate" << it.rd.id << ", R" << it.rs.id << ", " << it.immediate;
+                    std::cout << "Addi R" << it.rd.id << ", R" << it.rs.id << ", " << it.immediate;
                     break;
                 case sub:
                     std::cout << "Sub R" << it.rd.id << ", R" << it.rs.id << ", R" << it.rt.id;
